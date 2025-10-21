@@ -80,6 +80,76 @@ export default function BoothPage() {
     }
   };
 
+  // 이미지 인쇄 핸들러
+  const handlePrint = () => {
+    if (!processedPhoto) return;
+
+    try {
+      // 새 창에서 인쇄 미리보기 열기
+      const printWindow = window.open('', '', 'width=800,height=600');
+
+      if (!printWindow) {
+        showNotification('팝업이 차단되었습니다. 팝업을 허용해주세요.', 'error');
+        return;
+      }
+
+      // 인쇄용 HTML 작성
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>포토부스 인쇄</title>
+            <style>
+              @media print {
+                @page {
+                  size: 4in 6in; /* 4x6 inch 포토 용지 */
+                  margin: 0;
+                }
+                body {
+                  margin: 0;
+                  padding: 0;
+                }
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: #f0f0f0;
+              }
+              img {
+                max-width: 100%;
+                max-height: 100vh;
+                display: block;
+              }
+              @media print {
+                body {
+                  background: white;
+                }
+                img {
+                  width: 100%;
+                  height: 100%;
+                  object-fit: contain;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${processedPhoto}" alt="Photobooth" onload="window.print(); setTimeout(() => window.close(), 500);" />
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      showNotification('인쇄 대화상자를 확인하세요', 'info');
+    } catch (error) {
+      console.error('인쇄 실패:', error);
+      showNotification('인쇄에 실패했습니다', 'error');
+    }
+  };
+
   // 다시 촬영
   const handleRetake = () => {
     setCapturedPhoto(null);
@@ -167,6 +237,24 @@ export default function BoothPage() {
 
                   {/* 액션 버튼들 */}
                   <div className="flex flex-wrap gap-3 justify-center">
+                    {/* 인쇄 버튼 */}
+                    <button
+                      onClick={handlePrint}
+                      disabled={!processedPhoto || isProcessing}
+                      className={`
+                        flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105
+                        ${processedPhoto && !isProcessing
+                          ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-lg hover:shadow-xl'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }
+                      `}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                      사진 인쇄
+                    </button>
+
                     {/* 다운로드 버튼 */}
                     <button
                       onClick={handleDownload}
