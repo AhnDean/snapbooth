@@ -77,19 +77,49 @@ export default function BoothPage() {
   };
 
   // 이미지 다운로드 핸들러
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!processedPhoto) return;
 
     try {
-      const filename = generateFilename('photobooth');
-      const success = downloadImage(processedPhoto, filename);
+      const filename = generateFilename('chupbox_photo');
 
-      if (success) {
-        showNotification(SUCCESS_MESSAGES.DOWNLOAD_COMPLETED, 'success');
+      // Data URL을 Blob으로 변환
+      const response = await fetch(processedPhoto);
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: 'image/png' });
+
+      // 모바일에서 Web Share API 사용 가능한지 확인
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'CHUPBOX 포토부스',
+          text: '추억의 순간을 담았어요! 📸'
+        });
+        showNotification('공유 완료!', 'success');
       } else {
-        showNotification(ERROR_MESSAGES.DOWNLOAD_FAILED, 'error');
+        // Web Share 미지원 시 일반 다운로드
+        const success = downloadImage(processedPhoto, filename);
+
+        if (success) {
+          // 모바일인 경우 가이드 표시
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          if (isMobile) {
+            showNotification(SUCCESS_MESSAGES.DOWNLOAD_COMPLETED, 'success');
+            setTimeout(() => {
+              showNotification('💡 다운로드 폴더에서 사진을 길게 눌러 "이미지로 저장"을 선택하면 갤러리에 저장됩니다', 'info');
+            }, 2000);
+          } else {
+            showNotification(SUCCESS_MESSAGES.DOWNLOAD_COMPLETED, 'success');
+          }
+        } else {
+          showNotification(ERROR_MESSAGES.DOWNLOAD_FAILED, 'error');
+        }
       }
     } catch (error) {
+      // 사용자가 공유 취소한 경우
+      if (error.name === 'AbortError') {
+        return;
+      }
       console.error('다운로드 실패:', error);
       showNotification(ERROR_MESSAGES.DOWNLOAD_FAILED, 'error');
     }
@@ -280,7 +310,7 @@ export default function BoothPage() {
 
     try {
       const options = {
-        photoWidth: 560,
+        photoWidth: 480,  // 4:3 비율로 변경 (촬영 화면과 동일)
         photoHeight: 360,
         spacing: 15,
         padding: 30,
@@ -598,15 +628,15 @@ export default function BoothPage() {
                       사진 인쇄
                     </button>
 
-                    {/* 이미지 다운로드 버튼 */}
+                    {/* 갤러리에 저장 버튼 */}
                     <button
                       onClick={handleDownload}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-all duration-300 transform hover:scale-105 shadow-md"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      이미지 다운로드
+                      갤러리에 저장
                     </button>
 
                     {/* 다시 촬영 버튼 */}

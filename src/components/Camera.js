@@ -40,8 +40,53 @@ const Camera = ({
     }
   }, [isWebcamOn]);
 
+  // 이미지를 4:3 비율로 크롭
+  const cropTo4x3 = (imageDataUrl) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const targetRatio = 4 / 3;
+        const sourceRatio = img.width / img.height;
+
+        let sourceWidth = img.width;
+        let sourceHeight = img.height;
+        let sourceX = 0;
+        let sourceY = 0;
+
+        // 원본이 더 넓은 경우 (16:9 등) - 좌우를 크롭
+        if (sourceRatio > targetRatio) {
+          sourceWidth = img.height * targetRatio;
+          sourceX = (img.width - sourceWidth) / 2;
+        }
+        // 원본이 더 높은 경우 - 상하를 크롭
+        else if (sourceRatio < targetRatio) {
+          sourceHeight = img.width / targetRatio;
+          sourceY = (img.height - sourceHeight) / 2;
+        }
+
+        // 4:3 비율로 캔버스 설정
+        canvas.width = sourceWidth;
+        canvas.height = sourceHeight;
+
+        // 크롭된 영역을 캔버스에 그리기
+        ctx.drawImage(
+          img,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, canvas.width, canvas.height
+        );
+
+        resolve(canvas.toDataURL('image/jpeg', 0.95));
+      };
+      img.onerror = reject;
+      img.src = imageDataUrl;
+    });
+  };
+
   // 사진 촬영
-  const capture = useCallback(() => {
+  const capture = useCallback(async () => {
     if (!webcamRef.current || !isWebcamOn) return;
 
     try {
@@ -49,11 +94,14 @@ const Camera = ({
       const imageSrc = webcamRef.current.getScreenshot();
 
       if (imageSrc) {
+        // 4:3 비율로 크롭
+        const croppedImage = await cropTo4x3(imageSrc);
+
         // 4컷 모드가 아닐 때만 capturedImage를 저장
         if (!is4CutMode) {
-          setCapturedImage(imageSrc);
+          setCapturedImage(croppedImage);
         }
-        onCapture && onCapture(imageSrc);
+        onCapture && onCapture(croppedImage);
 
         // 촬영 성공 피드백
         setTimeout(() => {
