@@ -1,0 +1,66 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- 별 프레임 - 골드 스타 -->
+  <defs>
+    <radialGradient id="goldGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ffb000;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff8c00;stop-opacity:1" />
+    </radialGradient>
+    <filter id="starGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 메인 테두리 -->
+  <rect x="30" y="30" width="740" height="540"
+        fill="none"
+        stroke="url(#goldGradient)"
+        stroke-width="18"
+        rx="15"/>
+
+  <!-- 이중 테두리 -->
+  <rect x="50" y="50" width="700" height="500"
+        fill="none"
+        stroke="#ffcc33"
+        stroke-width="3"
+        rx="8"/>
+
+  <!-- 별 장식들 -->
+  <g fill="url(#goldGradient)" filter="url(#starGlow)">
+    <!-- 상단 별들 -->
+    <polygon points="100,70 105,80 115,80 107,87 110,97 100,90 90,97 93,87 85,80 95,80" />
+    <polygon points="400,55 408,70 423,70 411,80 416,95 400,85 384,95 389,80 377,70 392,70" />
+    <polygon points="700,70 705,80 715,80 707,87 710,97 700,90 690,97 693,87 685,80 695,80" />
+
+    <!-- 하단 별들 -->
+    <polygon points="100,530 105,540 115,540 107,547 110,557 100,550 90,557 93,547 85,540 95,540" />
+    <polygon points="400,545 408,560 423,560 411,570 416,585 400,575 384,585 389,570 377,560 392,560" />
+    <polygon points="700,530 705,540 715,540 707,547 710,557 700,550 690,557 693,547 685,540 695,540" />
+
+    <!-- 좌측 별들 -->
+    <polygon points="70,200 75,210 85,210 77,217 80,227 70,220 60,227 63,217 55,210 65,210" />
+    <polygon points="70,400 75,410 85,410 77,417 80,427 70,420 60,427 63,417 55,410 65,410" />
+
+    <!-- 우측 별들 -->
+    <polygon points="730,200 735,210 745,210 737,217 740,227 730,220 720,227 723,217 715,210 725,210" />
+    <polygon points="730,400 735,410 745,410 737,417 740,427 730,420 720,427 723,417 715,410 725,410" />
+
+    <!-- 중앙 상단 큰 별 -->
+    <polygon points="400,80 410,100 432,100 416,115 422,137 400,122 378,137 384,115 368,100 390,100" />
+  </g>
+
+  <!-- 제목 영역 -->
+  <rect x="310" y="35" width="180" height="28"
+        fill="url(#goldGradient)"
+        rx="14"/>
+  <text x="400" y="54"
+        font-family="Arial, sans-serif"
+        font-size="14"
+        font-weight="bold"
+        text-anchor="middle"
+        fill="white">★ STELLAR ★</text>
+</svg>

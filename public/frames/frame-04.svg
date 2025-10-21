@@ -1,0 +1,105 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- 꽃 프레임 - 스프링 그린 -->
+  <defs>
+    <linearGradient id="springGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a8e6cf;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#7fcdcd;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#81c784;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="flowerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffb3e6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff8a95;stop-opacity:1" />
+    </linearGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 메인 테두리 -->
+  <rect x="35" y="35" width="730" height="530"
+        fill="none"
+        stroke="url(#springGradient)"
+        stroke-width="20"
+        rx="30"/>
+
+  <!-- 내부 장식 테두리 -->
+  <rect x="55" y="55" width="690" height="490"
+        fill="none"
+        stroke="#a8e6cf"
+        stroke-width="2"
+        rx="20"
+        stroke-dasharray="3,2"/>
+
+  <!-- 꽃 장식들 -->
+  <g filter="url(#softGlow)">
+    <!-- 상단 좌측 꽃 -->
+    <g transform="translate(80,80)">
+      <circle cx="0" cy="0" r="12" fill="url(#flowerGradient)"/>
+      <circle cx="15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="-15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="-15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="0" r="4" fill="#ffd54f"/>
+    </g>
+
+    <!-- 상단 우측 꽃 -->
+    <g transform="translate(720,80)">
+      <circle cx="0" cy="0" r="12" fill="url(#flowerGradient)"/>
+      <circle cx="15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="-15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="-15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="0" r="4" fill="#ffd54f"/>
+    </g>
+
+    <!-- 하단 좌측 꽃 -->
+    <g transform="translate(80,520)">
+      <circle cx="0" cy="0" r="12" fill="url(#flowerGradient)"/>
+      <circle cx="15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="-15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="-15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="0" r="4" fill="#ffd54f"/>
+    </g>
+
+    <!-- 하단 우측 꽃 -->
+    <g transform="translate(720,520)">
+      <circle cx="0" cy="0" r="12" fill="url(#flowerGradient)"/>
+      <circle cx="15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="-15" cy="0" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="-15" r="8" fill="url(#flowerGradient)"/>
+      <circle cx="0" cy="0" r="4" fill="#ffd54f"/>
+    </g>
+  </g>
+
+  <!-- 잎사귀 장식 -->
+  <g fill="#81c784">
+    <!-- 상단 잎사귀들 -->
+    <ellipse cx="120" cy="90" rx="15" ry="8" transform="rotate(20 120 90)"/>
+    <ellipse cx="680" cy="90" rx="15" ry="8" transform="rotate(-20 680 90)"/>
+
+    <!-- 하단 잎사귀들 -->
+    <ellipse cx="120" cy="510" rx="15" ry="8" transform="rotate(-20 120 510)"/>
+    <ellipse cx="680" cy="510" rx="15" ry="8" transform="rotate(20 680 510)"/>
+
+    <!-- 좌측 줄기 -->
+    <rect x="75" y="120" width="3" height="350" rx="1"/>
+    <rect x="715" y="120" width="3" height="350" rx="1"/>
+  </g>
+
+  <!-- 제목 영역 -->
+  <rect x="320" y="40" width="160" height="26"
+        fill="url(#springGradient)"
+        rx="13"/>
+  <text x="400" y="58"
+        font-family="Arial, sans-serif"
+        font-size="13"
+        font-weight="bold"
+        text-anchor="middle"
+        fill="white">🌸 BLOOM 🌸</text>
+</svg>

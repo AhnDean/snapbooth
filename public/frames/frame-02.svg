@@ -1,0 +1,62 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- 하트 프레임 - 로맨틱 핑크 -->
+  <defs>
+    <linearGradient id="pinkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b9d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c44569;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 메인 테두리 -->
+  <rect x="25" y="25" width="750" height="550"
+        fill="none"
+        stroke="url(#pinkGradient)"
+        stroke-width="15"
+        rx="25"
+        filter="url(#glow)"/>
+
+  <!-- 내부 데코 라인 -->
+  <rect x="45" y="45" width="710" height="510"
+        fill="none"
+        stroke="#ff85a6"
+        stroke-width="2"
+        rx="15"
+        stroke-dasharray="5,5"/>
+
+  <!-- 하트 장식들 -->
+  <g fill="#ff6b9d">
+    <!-- 상단 하트들 -->
+    <path d="M 100 60 C 100 55, 105 50, 110 50 C 115 50, 120 55, 120 60 C 120 65, 110 75, 110 75 C 110 75, 100 65, 100 60 Z"/>
+    <path d="M 680 60 C 680 55, 685 50, 690 50 C 695 50, 700 55, 700 60 C 700 65, 690 75, 690 75 C 690 75, 680 65, 680 60 Z"/>
+
+    <!-- 하단 하트들 -->
+    <path d="M 100 540 C 100 535, 105 530, 110 530 C 115 530, 120 535, 120 540 C 120 545, 110 555, 110 555 C 110 555, 100 545, 100 540 Z"/>
+    <path d="M 680 540 C 680 535, 685 530, 690 530 C 695 530, 700 535, 700 540 C 700 545, 690 555, 690 555 C 690 555, 680 545, 680 540 Z"/>
+
+    <!-- 좌측 하트들 -->
+    <path d="M 60 150 C 60 145, 65 140, 70 140 C 75 140, 80 145, 80 150 C 80 155, 70 165, 70 165 C 70 165, 60 155, 60 150 Z"/>
+    <path d="M 60 450 C 60 445, 65 440, 70 440 C 75 440, 80 445, 80 450 C 80 455, 70 465, 70 465 C 70 465, 60 455, 60 450 Z"/>
+
+    <!-- 우측 하트들 -->
+    <path d="M 720 150 C 720 145, 725 140, 730 140 C 735 140, 740 145, 740 150 C 740 155, 730 165, 730 165 C 730 165, 720 155, 720 150 Z"/>
+    <path d="M 720 450 C 720 445, 725 440, 730 440 C 735 440, 740 445, 740 450 C 740 455, 730 465, 730 465 C 730 465, 720 455, 720 450 Z"/>
+  </g>
+
+  <!-- 제목 영역 -->
+  <rect x="320" y="35" width="160" height="25"
+        fill="url(#pinkGradient)"
+        rx="12"/>
+  <text x="400" y="52"
+        font-family="Arial, sans-serif"
+        font-size="12"
+        font-weight="bold"
+        text-anchor="middle"
+        fill="white">♥ LOVE ♥</text>
+</svg>
