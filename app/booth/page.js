@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Camera from '../../src/components/Camera';
 import FrameGallery from '../../src/components/FrameGallery';
 import { applyFrame, downloadImage, generateFilename } from '../../src/utils/imageProcessing';
@@ -127,12 +128,12 @@ export default function BoothPage() {
               </button>
 
               {/* 홈으로 돌아가기 */}
-              <a
+              <Link
                 href="/"
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
                 홈으로
-              </a>
+              </Link>
             </div>
           </div>
         </div>
