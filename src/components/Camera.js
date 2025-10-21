@@ -10,6 +10,7 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [error, setError] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [facingMode, setFacingMode] = useState('user'); // 'user' = 전면, 'environment' = 후면
 
   // 카메라 켜기/끄기
   const toggleWebcam = useCallback(async () => {
@@ -60,6 +61,11 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
     setError(null);
   }, []);
 
+  // 카메라 전환 (전면/후면)
+  const switchCamera = useCallback(() => {
+    setFacingMode(prevMode => prevMode === 'user' ? 'environment' : 'user');
+  }, []);
+
   // 웹캠 에러 처리
   const handleWebcamError = useCallback((error) => {
     console.error('Webcam error:', error);
@@ -89,10 +95,13 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
                 ref={webcamRef}
                 audio={false}
                 screenshotFormat="image/jpeg"
-                videoConstraints={CAMERA_CONSTRAINTS.video}
+                videoConstraints={{
+                  ...CAMERA_CONSTRAINTS.video,
+                  facingMode: facingMode
+                }}
                 onUserMediaError={handleWebcamError}
                 className="w-full h-full object-cover"
-                mirrored={true}
+                mirrored={facingMode === 'user'}
               />
 
               {/* 프레임 오버레이 */}
@@ -212,6 +221,19 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
           )}
         </button>
 
+        {/* 카메라 전환 버튼 (카메라가 켜져있고 촬영하지 않았을 때만 표시) */}
+        {isWebcamOn && !capturedImage && (
+          <button
+            onClick={switchCamera}
+            className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+            title={facingMode === 'user' ? '후면 카메라로 전환' : '전면 카메라로 전환'}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        )}
+
         {/* 다시 촬영 버튼 (촬영된 이미지가 있을 때만 표시) */}
         {capturedImage && (
           <button
@@ -239,7 +261,7 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
             w-2 h-2 rounded-full
             ${isWebcamOn ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}
           `} />
-          {isWebcamOn ? '카메라 켜짐' : '카메라 꺼짐'}
+          {isWebcamOn ? `카메라 켜짐 (${facingMode === 'user' ? '전면' : '후면'})` : '카메라 꺼짐'}
         </div>
       </div>
 
