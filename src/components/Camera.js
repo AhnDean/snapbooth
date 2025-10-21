@@ -1,10 +1,20 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { CAMERA_CONSTRAINTS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../utils/constants';
 
-const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
+const Camera = ({
+  onCapture,
+  selectedFrame = null,
+  className = '',
+  autoCapture = false,
+  is4CutMode = false,
+  isReviewingPhoto = false,
+  reviewPhoto = null,
+  onProceedNext = null,
+  onRetake = null
+}) => {
   const webcamRef = useRef(null);
   const [isWebcamOn, setIsWebcamOn] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
@@ -39,7 +49,10 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
       const imageSrc = webcamRef.current.getScreenshot();
 
       if (imageSrc) {
-        setCapturedImage(imageSrc);
+        // 4컷 모드가 아닐 때만 capturedImage를 저장
+        if (!is4CutMode) {
+          setCapturedImage(imageSrc);
+        }
         onCapture && onCapture(imageSrc);
 
         // 촬영 성공 피드백
@@ -53,7 +66,7 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
       setError(ERROR_MESSAGES.CAPTURE_FAILED);
       setIsCapturing(false);
     }
-  }, [isWebcamOn, onCapture]);
+  }, [isWebcamOn, onCapture, is4CutMode]);
 
   // 다시 촬영
   const retake = useCallback(() => {
@@ -83,13 +96,46 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
     setIsWebcamOn(false);
   }, []);
 
+  // 4컷 모드 자동 촬영
+  useEffect(() => {
+    if (autoCapture && isWebcamOn) {
+      // 약간의 딜레이 후 자동 촬영 (카메라 안정화)
+      const timer = setTimeout(() => {
+        capture();
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, [autoCapture, isWebcamOn]);
+
   return (
     <div className={`camera-container ${className}`}>
       {/* 메인 카메라 영역 */}
       <div className="relative bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
         {/* 웹캠 화면 또는 플레이스홀더 */}
         <div className="relative aspect-[4/3] bg-gray-800">
-          {isWebcamOn && !capturedImage ? (
+          {isReviewingPhoto && reviewPhoto ? (
+            /* 리뷰 모드 - 촬영된 사진 표시 */
+            <div className="relative w-full h-full">
+              <img
+                src={reviewPhoto}
+                alt="review"
+                className="w-full h-full object-cover"
+              />
+
+              {/* 프레임 오버레이 */}
+              {selectedFrame && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <img
+                    src={selectedFrame.src}
+                    alt="frame overlay"
+                    className="w-full h-full object-contain"
+                    style={{ mixBlendMode: 'normal' }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : isWebcamOn && !capturedImage ? (
             <>
               <Webcam
                 ref={webcamRef}
@@ -174,34 +220,50 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
 
       {/* 컨트롤 버튼들 */}
       <div className="flex justify-center items-center gap-4 mt-6">
-        {/* 카메라 on/off 버튼 */}
-        <button
-          onClick={toggleWebcam}
-          className={`
-            flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg
-            ${isWebcamOn
-              ? 'bg-red-500 hover:bg-red-600 text-white'
-              : 'bg-green-500 hover:bg-green-600 text-white'
-            }
-          `}
-          title={isWebcamOn ? '카메라 끄기' : '카메라 켜기'}
-        >
-          {isWebcamOn ? (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          ) : (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          )}
-        </button>
+        {/* 왼쪽 그룹: 카메라 켜기 + 전환 */}
+        <div className="flex items-center gap-3">
+          {/* 카메라 on/off 버튼 */}
+          <button
+            onClick={toggleWebcam}
+            className={`
+              flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg
+              ${isWebcamOn
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : 'bg-green-500 hover:bg-green-600 text-white'
+              }
+            `}
+            title={isWebcamOn ? '카메라 끄기' : '카메라 켜기'}
+          >
+            {isWebcamOn ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+          </button>
 
-        {/* 촬영 버튼 */}
+          {/* 카메라 전환 버튼 (카메라가 켜져있을 때만 표시) */}
+          {isWebcamOn && !capturedImage && (
+            <button
+              onClick={switchCamera}
+              className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+              title={facingMode === 'user' ? '후면 카메라로 전환' : '전면 카메라로 전환'}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* 중앙: 촬영 버튼 - 리뷰 모드일 때는 다음 단계 진행 */}
         <button
-          onClick={capture}
+          onClick={isReviewingPhoto && onProceedNext ? onProceedNext : capture}
           disabled={!isWebcamOn || isCapturing}
           className={`
             flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 transform hover:scale-105 shadow-xl
@@ -210,7 +272,7 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
               : 'bg-gray-400 text-gray-600 cursor-not-allowed'
             }
           `}
-          title="사진 촬영"
+          title={isReviewingPhoto ? "다음 사진으로" : "사진 촬영"}
         >
           {isCapturing ? (
             <div className="w-8 h-8 border-4 border-gray-600 border-t-transparent rounded-full animate-spin" />
@@ -221,12 +283,12 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
           )}
         </button>
 
-        {/* 카메라 전환 버튼 (카메라가 켜져있고 촬영하지 않았을 때만 표시) */}
-        {isWebcamOn && !capturedImage && (
+        {/* 오른쪽: 다시 찍기 버튼 (리뷰 모드일 때만 표시) */}
+        {isReviewingPhoto && onRetake && (
           <button
-            onClick={switchCamera}
-            className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
-            title={facingMode === 'user' ? '후면 카메라로 전환' : '전면 카메라로 전환'}
+            onClick={onRetake}
+            className="flex items-center justify-center w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+            title="다시 찍기"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -234,8 +296,8 @@ const Camera = ({ onCapture, selectedFrame = null, className = '' }) => {
           </button>
         )}
 
-        {/* 다시 촬영 버튼 (촬영된 이미지가 있을 때만 표시) */}
-        {capturedImage && (
+        {/* 다시 촬영 버튼 제거 (4컷 모드에서는 필요없음) */}
+        {false && capturedImage && (
           <button
             onClick={retake}
             className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-600 hover:bg-gray-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"

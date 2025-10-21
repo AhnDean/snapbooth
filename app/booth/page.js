@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Camera from '../../src/components/Camera';
 import FrameGallery from '../../src/components/FrameGallery';
-import { applyFrame, downloadImage, generateFilename } from '../../src/utils/imageProcessing';
+import { applyFrame, downloadImage, generateFilename, create4CutLayout } from '../../src/utils/imageProcessing';
 import { FRAMES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../src/utils/constants';
 
 export default function BoothPage() {
@@ -14,6 +14,21 @@ export default function BoothPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showFrameGallery, setShowFrameGallery] = useState(true);
   const [notification, setNotification] = useState(null);
+
+  // 4컷 촬영 상태
+  const [fourCutPhotos, setFourCutPhotos] = useState([]);
+  const [countdown, setCountdown] = useState(0);
+  const [backgroundColor, setBackgroundColor] = useState('#000000');
+  const [isAutoMode, setIsAutoMode] = useState(false); // 자동/수동 모드
+  const [lastCapturedPhoto, setLastCapturedPhoto] = useState(null); // 방금 찍은 사진
+  const [isReviewingPhoto, setIsReviewingPhoto] = useState(false); // 사진 확인 중
+  const countdownTimerRef = useRef(null);
+  const cameraRef = useRef(null);
+
+  // 새로운 옵션 상태
+  const [layoutType, setLayoutType] = useState('1x4'); // 1x4, 2x2
+  const [countdownDuration, setCountdownDuration] = useState(5); // 3, 5, 7 초
+  const [showFrameModal, setShowFrameModal] = useState(false);
 
   // 사진 촬영 핸들러
   const handlePhotoCapture = async (photoDataUrl) => {
@@ -155,7 +170,156 @@ export default function BoothPage() {
     setCapturedPhoto(null);
     setProcessedPhoto(null);
     setIsProcessing(false);
+    // 4컷 촬영 초기화
+    setFourCutPhotos([]);
+    setCountdown(5);
   };
+
+  // 촬영 초기화
+  const resetShooting = () => {
+    setFourCutPhotos([]);
+    setCountdown(0);
+    setIsAutoMode(false);
+    setLastCapturedPhoto(null);
+    setIsReviewingPhoto(false);
+    setCapturedPhoto(null);
+    setProcessedPhoto(null);
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+    }
+  };
+
+  // 4컷 사진 촬영 핸들러
+  const handle4CutCapture = useCallback(async (photoDataUrl) => {
+    // 이미 4컷 완성되었으면 더 이상 촬영 불가
+    if (fourCutPhotos.length >= 4) {
+      showNotification('이미 4컷 촬영이 완료되었습니다!', 'info');
+      return;
+    }
+
+    // 자동 모드: 바로 배열에 추가하고 다음 촬영
+    if (isAutoMode) {
+      const newPhotos = [...fourCutPhotos, photoDataUrl];
+      setFourCutPhotos(newPhotos);
+
+      if (newPhotos.length < 4) {
+        // 다음 촬영 준비
+        setTimeout(() => {
+          setCountdown(countdownDuration);
+          showNotification(`${newPhotos.length}/4 촬영 완료! ${countdownDuration}초 후 다음 촬영`, 'success');
+        }, 500);
+      } else {
+        // 4장 모두 촬영 완료 - 합성 시작
+        setCountdown(0);
+        setIsAutoMode(false);
+        showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
+        await create4CutImage(newPhotos);
+      }
+    } else {
+      // 수동 모드: 확인 모드 진입
+      setLastCapturedPhoto(photoDataUrl);
+      setIsReviewingPhoto(true);
+      setCountdown(0);
+      showNotification('사진이 촬영되었습니다. 다시 찍기를 원하면 버튼을 누르세요.', 'success');
+    }
+  }, [fourCutPhotos.length, isAutoMode, countdownDuration]);
+
+  // 다음 컷으로 진행 (촬영 버튼을 다시 누르면)
+  const proceedToNextPhoto = useCallback(async () => {
+    if (!isReviewingPhoto || !lastCapturedPhoto) return;
+
+    const newPhotos = [...fourCutPhotos, lastCapturedPhoto];
+    setFourCutPhotos(newPhotos);
+    setIsReviewingPhoto(false);
+    setLastCapturedPhoto(null);
+
+    if (newPhotos.length < 4) {
+      // 자동 모드일 때만 카운트다운 시작
+      if (isAutoMode) {
+        setTimeout(() => {
+          setCountdown(countdownDuration);
+          showNotification(`${newPhotos.length}/4 촬영 완료! ${countdownDuration}초 후 다음 촬영`, 'success');
+        }, 500);
+      } else {
+        // 수동 모드는 카운트다운 없이 다음 촬영 대기
+        showNotification(`${newPhotos.length}/4 촬영 완료! 촬영 버튼을 눌러 다음 사진을 촬영하세요`, 'success');
+      }
+    } else {
+      // 4장 모두 촬영 완료 - 합성 시작
+      setCountdown(0);
+      setIsAutoMode(false);
+      showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
+      await create4CutImage(newPhotos);
+    }
+  }, [fourCutPhotos, lastCapturedPhoto, isReviewingPhoto, isAutoMode, countdownDuration]);
+
+  // 촬영한 사진 다시 찍기
+  const retakeCurrentPhoto = useCallback(() => {
+    setLastCapturedPhoto(null);
+    setIsReviewingPhoto(false);
+
+    // 자동 모드면 카운트다운 재시작
+    if (isAutoMode) {
+      setCountdown(countdownDuration);
+      showNotification(`다시 촬영합니다. ${countdownDuration}초 후 촬영`, 'info');
+    } else {
+      showNotification('촬영 버튼을 눌러 다시 촬영하세요', 'info');
+    }
+  }, [isAutoMode, countdownDuration]);
+
+  // 자동 촬영 취소
+  const cancelAutoMode = useCallback(() => {
+    setIsAutoMode(false);
+    setCountdown(0);
+    showNotification('자동 촬영이 취소되었습니다', 'info');
+  }, []);
+
+  // 4컷 이미지 합성
+  const create4CutImage = async (photos) => {
+    setIsProcessing(true);
+
+    try {
+      const options = {
+        photoWidth: 560,
+        photoHeight: 360,
+        spacing: 15,
+        padding: 30,
+        backgroundColor: backgroundColor,
+        footerText: new Date().toLocaleDateString('ko-KR')
+      };
+
+      const result = await create4CutLayout(
+        photos,
+        selectedFrame?.src || null,
+        options
+      );
+
+      setProcessedPhoto(result);
+      setCapturedPhoto(result);
+      // 촬영 완료 (4컷 배열은 유지하여 모니터링에서 확인 가능)
+      showNotification('4컷 이미지 생성 완료!', 'success');
+    } catch (error) {
+      console.error('4컷 합성 실패:', error);
+      showNotification('4컷 이미지 생성 실패', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 카운트다운 타이머 (자동 모드일 때만)
+  useEffect(() => {
+    if (isAutoMode && countdown > 0) {
+      countdownTimerRef.current = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    }
+
+    return () => {
+      if (countdownTimerRef.current) {
+        clearTimeout(countdownTimerRef.current);
+      }
+    };
+  }, [isAutoMode, countdown]);
 
   // 알림 표시
   const showNotification = (message, type = 'info') => {
@@ -169,34 +333,20 @@ export default function BoothPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
+    <div className="min-h-screen bg-[#fef5e7]">
       {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-3">
-              <div className="text-2xl">📸</div>
-              <h1 className="text-xl font-bold text-gray-900">SnapBooth</h1>
+              <h1 className="text-3xl font-bold">
+                <span style={{ color: '#ee5253' }}>CHUP</span>
+                <span style={{ color: '#f7d945' }}>BOX</span>
+              </h1>
+              <p className="text-sm text-gray-500 ml-2">Capture Memories</p>
             </div>
 
             <div className="flex items-center gap-4">
-              {/* 프레임 갤러리 토글 */}
-              <button
-                onClick={toggleFrameGallery}
-                className={`
-                  px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2
-                  ${showFrameGallery
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }
-                `}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                프레임 {showFrameGallery ? '숨기기' : '선택'}
-              </button>
-
               {/* 홈으로 돌아가기 */}
               <Link
                 href="/"
@@ -211,43 +361,236 @@ export default function BoothPage() {
 
       {/* 메인 컨텐츠 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className={`grid gap-8 ${showFrameGallery ? 'lg:grid-cols-3' : 'lg:grid-cols-1'}`}>
+        <div className="grid gap-8 lg:grid-cols-3">
 
           {/* 카메라 영역 */}
-          <div className={`${showFrameGallery ? 'lg:col-span-2' : 'max-w-2xl mx-auto'}`}>
+          <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-xl p-6">
-              <Camera
-                onCapture={handlePhotoCapture}
-                selectedFrame={selectedFrame}
-                className="w-full"
-              />
 
-              {/* 촬영된 사진이 있을 때 액션 버튼들 */}
-              {capturedPhoto && (
-                <div className="mt-6 space-y-4">
-                  {/* 처리 중 표시 */}
-                  {isProcessing && (
-                    <div className="flex items-center justify-center py-4">
-                      <div className="flex items-center gap-3 text-blue-600">
-                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                        <span className="font-medium">프레임 적용 중...</span>
+              {/* 설정 영역 */}
+              <div className="mb-6 grid grid-cols-3 gap-4">
+                  {/* 레이아웃 선택 */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      레이아웃
+                    </label>
+                    <select
+                      value={layoutType}
+                      onChange={(e) => setLayoutType(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-gray-700 font-medium"
+                    >
+                      <option value="1x4">1×4 (세로 일렬)</option>
+                      <option value="2x2">2×2 (정사각형)</option>
+                    </select>
+                  </div>
+
+                  {/* 촬영 대기시간 선택 */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      촬영 대기시간
+                    </label>
+                    <select
+                      value={countdownDuration}
+                      onChange={(e) => setCountdownDuration(Number(e.target.value))}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-gray-700 font-medium"
+                    >
+                      <option value={3}>3초</option>
+                      <option value={5}>5초</option>
+                      <option value={7}>7초</option>
+                    </select>
+                  </div>
+
+                  {/* 프레임 선택 버튼 */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      프레임 선택
+                    </label>
+                    <button
+                      onClick={() => setShowFrameModal(true)}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 hover:border-blue-500 focus:border-blue-500 focus:outline-none transition-colors text-gray-700 font-medium bg-white hover:bg-gray-50 flex items-center justify-between"
+                    >
+                      <span>{selectedFrame ? selectedFrame.name : '프레임 없음'}</span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+              {/* 4컷 모드 컨트롤 버튼들 */}
+              <div className="mb-6 flex gap-4 items-center">
+                {/* 자동 촬영 버튼 */}
+                {!isAutoMode && fourCutPhotos.length === 0 && (
+                  <button
+                    onClick={() => {
+                      setIsAutoMode(true);
+                      setCountdown(countdownDuration);
+                      showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
+                    }}
+                    className="px-8 py-4 rounded-2xl font-bold text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    ⏱️ 자동 촬영
+                  </button>
+                )}
+
+                {/* 자동 촬영 취소 버튼 */}
+                {isAutoMode && fourCutPhotos.length < 4 && (
+                  <button
+                    onClick={cancelAutoMode}
+                    className="px-8 py-4 rounded-2xl font-bold text-lg bg-red-500 hover:bg-red-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    ✕ 자동 촬영 취소
+                  </button>
+                )}
+
+                {/* 촬영 진행 상태 및 옵션 */}
+                {(
+                  <div className="flex items-center gap-4">
+                    <div className="px-4 py-2 rounded-full font-bold text-white shadow-md" style={{ backgroundColor: '#ee5253' }}>
+                      {fourCutPhotos.length}/4 촬영 완료
+                    </div>
+                    {/* 배경 색상 선택 */}
+                    <div className="flex gap-2 bg-white px-4 py-2 rounded-full shadow-md">
+                      {[
+                        { color: '#000000', label: '블랙' },
+                        { color: '#ee5253', label: '레드' },
+                        { color: '#f7d945', label: '옐로우' },
+                        { color: '#FFFFFF', label: '화이트' }
+                      ].map(({ color, label }) => (
+                        <button
+                          key={color}
+                          onClick={() => setBackgroundColor(color)}
+                          className={`
+                            w-10 h-10 rounded-full border-3 transition-all hover:scale-110
+                            ${backgroundColor === color ? 'ring-4 ring-offset-2' : 'border-2 border-gray-300'}
+                          `}
+                          style={{
+                            backgroundColor: color,
+                            ringColor: '#ee5253'
+                          }}
+                          title={label}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 카운트다운 오버레이 */}
+              <div className="relative">
+                <Camera
+                  onCapture={handle4CutCapture}
+                  selectedFrame={selectedFrame}
+                  className="w-full"
+                  ref={cameraRef}
+                  autoCapture={isAutoMode && countdown === 0 && fourCutPhotos.length < 4 && !isReviewingPhoto}
+                  is4CutMode={true}
+                  isReviewingPhoto={isReviewingPhoto}
+                  reviewPhoto={lastCapturedPhoto}
+                  onProceedNext={proceedToNextPhoto}
+                  onRetake={retakeCurrentPhoto}
+                />
+
+                {/* 자동 모드 - 카운트다운 표시 */}
+                {isAutoMode && countdown > 0 && (
+                  <div className="absolute top-4 left-4 z-10 pointer-events-none">
+                    <div className="bg-black bg-opacity-60 px-4 py-2 rounded-xl flex items-center gap-3">
+                      <div className="text-4xl font-bold text-white animate-pulse">
+                        {countdown}
+                      </div>
+                      <div className="text-sm text-white">
+                        {fourCutPhotos.length + 1}/4
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* 액션 버튼들 */}
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    {/* 인쇄 버튼 */}
+                {/* 자동 모드 - 촬영 진행 표시 */}
+                {isAutoMode && countdown === 0 && fourCutPhotos.length < 4 && (
+                  <div className="absolute top-4 left-4 right-4 bg-white bg-opacity-90 rounded-lg p-3 z-10">
+                    <div className="flex gap-2 justify-center">
+                      {[0, 1, 2, 3].map((index) => (
+                        <div
+                          key={index}
+                          className={`
+                            w-16 h-20 rounded-lg border-2 flex items-center justify-center text-2xl
+                            ${index < fourCutPhotos.length
+                              ? 'bg-green-100 border-green-500 text-green-600'
+                              : index === fourCutPhotos.length
+                              ? 'bg-blue-100 border-blue-500 animate-pulse text-blue-600'
+                              : 'bg-gray-100 border-gray-300 text-gray-400'
+                            }
+                          `}
+                        >
+                          {index < fourCutPhotos.length ? '✓' : index + 1}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 수동 모드 - 촬영 안내 */}
+                {!isAutoMode && !isReviewingPhoto && fourCutPhotos.length < 4 && (
+                  <div className="absolute top-4 left-4 right-4 bg-blue-500 bg-opacity-90 rounded-lg p-3 z-10">
+                    <div className="text-center text-white font-semibold">
+                      촬영 버튼을 눌러 {fourCutPhotos.length + 1}번째 사진을 촬영하세요
+                    </div>
+                  </div>
+                )}
+
+                {/* 사진 확인 중 - 안내 메시지 */}
+                {isReviewingPhoto && lastCapturedPhoto && (
+                  <div className="absolute top-4 left-4 right-4 bg-green-500 bg-opacity-90 rounded-lg p-3 z-10">
+                    <div className="text-center text-white font-semibold">
+                      📸 {fourCutPhotos.length + 1}번째 사진 확인 중 - 다시 찍기 또는 촬영 버튼으로 다음 단계
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 왼쪽 하단 버튼들 제거 - 우측으로 이동 */}
+
+              {/* 완성된 사진 미리보기 (4컷 모드이므로 우측 모니터링에 표시됨) */}
+              {false && processedPhoto && (
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+                    📸 완성된 사진
+                  </h3>
+                  <div className="bg-white rounded-2xl p-6 shadow-2xl">
+                    <div className="flex justify-center">
+                      <img
+                        src={processedPhoto}
+                        alt="완성된 사진"
+                        className="max-w-full h-auto rounded-lg shadow-lg"
+                        style={{ maxHeight: '600px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 촬영 모니터링 영역 */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">
+                {processedPhoto && fourCutPhotos.length === 4 ? '📸 완성된 사진' : '📸 촬영 현황'}
+              </h3>
+
+              {/* 촬영 완료 - 완성된 4컷 이미지 표시 */}
+              {processedPhoto && fourCutPhotos.length === 4 ? (
+                <div className="space-y-4">
+                  <img
+                    src={processedPhoto}
+                    alt="완성된 4컷 사진"
+                    className="w-full rounded-lg shadow-lg"
+                  />
+                  <div className="space-y-2">
+                    {/* 사진 인쇄 버튼 */}
                     <button
                       onClick={handlePrint}
-                      disabled={!processedPhoto || isProcessing}
-                      className={`
-                        flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105
-                        ${processedPhoto && !isProcessing
-                          ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-lg hover:shadow-xl'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }
-                      `}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-md"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -255,17 +598,10 @@ export default function BoothPage() {
                       사진 인쇄
                     </button>
 
-                    {/* 다운로드 버튼 */}
+                    {/* 이미지 다운로드 버튼 */}
                     <button
                       onClick={handleDownload}
-                      disabled={!processedPhoto || isProcessing}
-                      className={`
-                        flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105
-                        ${processedPhoto && !isProcessing
-                          ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }
-                      `}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-all duration-300 transform hover:scale-105 shadow-md"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -276,67 +612,119 @@ export default function BoothPage() {
                     {/* 다시 촬영 버튼 */}
                     <button
                       onClick={handleRetake}
-                      className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gray-500 hover:bg-gray-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-gray-500 hover:bg-gray-600 text-white transition-all duration-300 transform hover:scale-105 shadow-md"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                       다시 촬영
                     </button>
-
-                    {/* 프레임 변경 버튼 (모바일에서 갤러리가 숨겨졌을 때) */}
-                    {!showFrameGallery && (
-                      <button
-                        onClick={toggleFrameGallery}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        프레임 변경
-                      </button>
-                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <span className="text-sm font-semibold text-blue-800">진행 상황</span>
+                    <span className="text-lg font-bold text-blue-600">{fourCutPhotos.length}/4</span>
                   </div>
 
-                  {/* 현재 선택된 프레임 정보 */}
-                  {selectedFrame && (
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-16 bg-white rounded-lg overflow-hidden shadow-sm">
-                          <img
-                            src={selectedFrame.src}
-                            alt={selectedFrame.name}
-                            className="w-full h-full object-cover"
-                          />
+                  {/* 1x4 레이아웃 */}
+                  {layoutType === '1x4' && (
+                    <div className="space-y-3">
+                      {[0, 1, 2, 3].map((index) => (
+                        <div
+                          key={index}
+                          className={`
+                            relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all
+                            ${index < fourCutPhotos.length
+                              ? 'border-green-500 shadow-md'
+                              : index === fourCutPhotos.length
+                              ? 'border-blue-500 animate-pulse'
+                              : 'border-gray-300 bg-gray-50'
+                            }
+                          `}
+                        >
+                          {fourCutPhotos[index] ? (
+                            <div className="relative w-full h-full">
+                              <img
+                                src={fourCutPhotos[index]}
+                                alt={`촬영 ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              {/* 프레임 오버레이 */}
+                              {selectedFrame && (
+                                <div className="absolute inset-0 pointer-events-none">
+                                  <img
+                                    src={selectedFrame.src}
+                                    alt={selectedFrame.name}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                              )}
+                              <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                ✓ {index + 1}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <span className="text-3xl font-bold text-gray-400">{index + 1}</span>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <p className="font-medium text-blue-900">
-                            현재 프레임: {selectedFrame.name}
-                          </p>
-                          <p className="text-sm text-blue-600">
-                            사진에 자동으로 적용됩니다
-                          </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 2x2 레이아웃 */}
+                  {layoutType === '2x2' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[0, 1, 2, 3].map((index) => (
+                        <div
+                          key={index}
+                          className={`
+                            relative aspect-square rounded-lg overflow-hidden border-2 transition-all
+                            ${index < fourCutPhotos.length
+                              ? 'border-green-500 shadow-md'
+                              : index === fourCutPhotos.length
+                              ? 'border-blue-500 animate-pulse'
+                              : 'border-gray-300 bg-gray-50'
+                            }
+                          `}
+                        >
+                          {fourCutPhotos[index] ? (
+                            <div className="relative w-full h-full">
+                              <img
+                                src={fourCutPhotos[index]}
+                                alt={`촬영 ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              {/* 프레임 오버레이 */}
+                              {selectedFrame && (
+                                <div className="absolute inset-0 pointer-events-none">
+                                  <img
+                                    src={selectedFrame.src}
+                                    alt={selectedFrame.name}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                              )}
+                              <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                ✓ {index + 1}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <span className="text-3xl font-bold text-gray-400">{index + 1}</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
               )}
             </div>
           </div>
-
-          {/* 프레임 갤러리 영역 */}
-          {showFrameGallery && (
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-8">
-                <FrameGallery
-                  frames={FRAMES}
-                  selectedFrame={selectedFrame}
-                  onSelectFrame={handleFrameSelect}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 사용 가이드 (촬영 전) */}
@@ -382,6 +770,109 @@ export default function BoothPage() {
           </div>
         )}
       </main>
+
+      {/* 프레임 선택 모달 */}
+      {showFrameModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+          onClick={() => setShowFrameModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 모달 헤더 */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800">🖼️ 프레임 선택</h2>
+              <button
+                onClick={() => setShowFrameModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 모달 본문 */}
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {/* 프레임 없음 옵션 */}
+                <button
+                  onClick={() => {
+                    setSelectedFrame(null);
+                    setShowFrameModal(false);
+                    showNotification('프레임이 제거되었습니다', 'success');
+                  }}
+                  className={`
+                    relative aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200 transform hover:scale-105 border-2
+                    ${!selectedFrame
+                      ? 'ring-4 ring-blue-500 shadow-lg border-blue-500'
+                      : 'border-gray-300 hover:border-gray-400'
+                    }
+                  `}
+                >
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <div className="text-center">
+                      <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                      <p className="text-xs text-gray-600 font-medium">없음</p>
+                    </div>
+                  </div>
+                  {!selectedFrame && (
+                    <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
+                      <div className="bg-blue-500 text-white rounded-full p-2">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </button>
+
+                {/* 프레임 옵션들 */}
+                {FRAMES.map((frame) => (
+                  <button
+                    key={frame.id}
+                    onClick={() => {
+                      handleFrameSelect(frame);
+                      setShowFrameModal(false);
+                      showNotification(`${frame.name} 프레임이 선택되었습니다`, 'success');
+                    }}
+                    className={`
+                      relative aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200 transform hover:scale-105
+                      ${selectedFrame?.id === frame.id
+                        ? 'ring-4 ring-blue-500 shadow-lg'
+                        : 'ring-2 ring-gray-200 hover:ring-gray-300'
+                      }
+                    `}
+                  >
+                    <img
+                      src={frame.src}
+                      alt={frame.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {selectedFrame?.id === frame.id && (
+                      <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
+                        <div className="bg-blue-500 text-white rounded-full p-2">
+                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs font-medium py-1 px-2 text-center">
+                      {frame.name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 알림 토스트 */}
       {notification && (
