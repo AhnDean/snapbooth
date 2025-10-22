@@ -8,6 +8,9 @@ import { applyFrame, downloadImage, generateFilename, create4CutLayout } from '.
 import { FRAMES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../src/utils/constants';
 import { uploadPhotoToCloud } from '../../src/utils/photoUpload';
 
+// Force dynamic rendering to avoid build-time errors with environment variables
+export const dynamic = 'force-dynamic';
+
 export default function BoothPage() {
   const [selectedFrame, setSelectedFrame] = useState(null);
   const [capturedPhoto, setCapturedPhoto] = useState(null);
