@@ -77,13 +77,23 @@ const Camera = ({
 
       // 실제 적용된 해상도 확인 (개발용)
       const video = webcamRef.current.video;
-      if (video) {
-        const resolution = `${video.videoWidth} x ${video.videoHeight}`;
-        console.log('실제 카메라 해상도:', resolution);
-        setCameraResolution(resolution);
-      }
+      if (!video) return;
 
-      const imageSrc = webcamRef.current.getScreenshot();
+      const resolution = `${video.videoWidth} x ${video.videoHeight}`;
+      console.log('실제 카메라 해상도:', resolution);
+      setCameraResolution(resolution);
+
+      // 고해상도 캡처: 비디오 원본 크기로 캔버스 생성
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+
+      // 비디오를 캔버스에 그리기 (원본 해상도)
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // PNG 포맷으로 캡처
+      const imageSrc = canvas.toDataURL('image/png', 1.0);
 
       if (imageSrc) {
         // 4:3 비율로 크롭
