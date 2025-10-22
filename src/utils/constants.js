@@ -3,8 +3,8 @@
 // 카메라 설정
 export const CAMERA_CONSTRAINTS = {
   video: {
-    width: { ideal: 1280, min: 640 },
-    height: { ideal: 720, min: 480 },
+    width: { ideal: 1920, min: 640 },
+    height: { ideal: 1440, min: 480 },
     facingMode: "user", // 전면 카메라
     frameRate: { ideal: 30, min: 15 }
   },
@@ -110,9 +110,9 @@ export const FILTERS = [
 
 // 이미지 설정
 export const IMAGE_CONFIG = {
-  width: 1200,
-  height: 800,
-  quality: 0.9,
+  width: 1920,
+  height: 1440,
+  quality: 0.95,
   format: 'png'
 };
 

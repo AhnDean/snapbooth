@@ -16,29 +16,11 @@ const Camera = ({
   onRetake = null
 }) => {
   const webcamRef = useRef(null);
-  const [isWebcamOn, setIsWebcamOn] = useState(false);
+  const [isWebcamOn, setIsWebcamOn] = useState(true); // 자동으로 켜짐
   const [capturedImage, setCapturedImage] = useState(null);
   const [error, setError] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [facingMode, setFacingMode] = useState('user'); // 'user' = 전면, 'environment' = 후면
-
-  // 카메라 켜기/끄기
-  const toggleWebcam = useCallback(async () => {
-    try {
-      setError(null);
-      if (isWebcamOn) {
-        // 카메라 끄기
-        setIsWebcamOn(false);
-        setCapturedImage(null);
-      } else {
-        // 카메라 켜기
-        setIsWebcamOn(true);
-      }
-    } catch (err) {
-      setError(ERROR_MESSAGES.CAMERA_PERMISSION_DENIED);
-      setIsWebcamOn(false);
-    }
-  }, [isWebcamOn]);
 
   // 이미지를 4:3 비율로 크롭
   const cropTo4x3 = (imageDataUrl) => {
@@ -78,7 +60,7 @@ const Camera = ({
           0, 0, canvas.width, canvas.height
         );
 
-        resolve(canvas.toDataURL('image/jpeg', 0.95));
+        resolve(canvas.toDataURL('image/png', 1.0));
       };
       img.onerror = reject;
       img.src = imageDataUrl;
@@ -91,6 +73,13 @@ const Camera = ({
 
     try {
       setIsCapturing(true);
+
+      // 실제 적용된 해상도 확인 (개발용)
+      const video = webcamRef.current.video;
+      if (video) {
+        console.log('실제 카메라 해상도:', video.videoWidth, 'x', video.videoHeight);
+      }
+
       const imageSrc = webcamRef.current.getScreenshot();
 
       if (imageSrc) {
@@ -188,7 +177,8 @@ const Camera = ({
               <Webcam
                 ref={webcamRef}
                 audio={false}
-                screenshotFormat="image/jpeg"
+                screenshotFormat="image/png"
+                screenshotQuality={1.0}
                 videoConstraints={{
                   ...CAMERA_CONSTRAINTS.video,
                   facingMode: facingMode
@@ -268,46 +258,18 @@ const Camera = ({
 
       {/* 컨트롤 버튼들 */}
       <div className="flex justify-center items-center gap-4 mt-6">
-        {/* 왼쪽 그룹: 카메라 켜기 + 전환 */}
-        <div className="flex items-center gap-3">
-          {/* 카메라 on/off 버튼 */}
+        {/* 카메라 전환 버튼 */}
+        {!capturedImage && (
           <button
-            onClick={toggleWebcam}
-            className={`
-              flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg
-              ${isWebcamOn
-                ? 'bg-red-500 hover:bg-red-600 text-white'
-                : 'bg-green-500 hover:bg-green-600 text-white'
-              }
-            `}
-            title={isWebcamOn ? '카메라 끄기' : '카메라 켜기'}
+            onClick={switchCamera}
+            className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+            title={facingMode === 'user' ? '후면 카메라로 전환' : '전면 카메라로 전환'}
           >
-            {isWebcamOn ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            )}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
           </button>
-
-          {/* 카메라 전환 버튼 (카메라가 켜져있을 때만 표시) */}
-          {isWebcamOn && !capturedImage && (
-            <button
-              onClick={switchCamera}
-              className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
-              title={facingMode === 'user' ? '후면 카메라로 전환' : '전면 카메라로 전환'}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          )}
-        </div>
+        )}
 
         {/* 중앙: 촬영 버튼 - 리뷰 모드일 때는 다음 단계 진행 */}
         <button
@@ -360,34 +322,11 @@ const Camera = ({
 
       {/* 카메라 상태 표시 */}
       <div className="flex justify-center mt-4">
-        <div className={`
-          flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium
-          ${isWebcamOn
-            ? 'bg-green-100 text-green-800'
-            : 'bg-gray-100 text-gray-600'
-          }
-        `}>
-          <div className={`
-            w-2 h-2 rounded-full
-            ${isWebcamOn ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}
-          `} />
-          {isWebcamOn ? `카메라 켜짐 (${facingMode === 'user' ? '전면' : '후면'})` : '카메라 꺼짐'}
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          카메라 켜짐 ({facingMode === 'user' ? '전면' : '후면'})
         </div>
       </div>
-
-      {/* 사용 가이드 (카메라가 꺼져있을 때) */}
-      {!isWebcamOn && !error && (
-        <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <div className="text-center text-blue-800">
-            <h3 className="font-semibold mb-2">📝 사용 방법</h3>
-            <div className="text-sm space-y-1">
-              <p>1. 초록색 버튼을 눌러 카메라를 켜세요</p>
-              <p>2. 가운데 큰 버튼으로 사진을 촬영하세요</p>
-              <p>3. 마음에 들지 않으면 다시 촬영할 수 있어요</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

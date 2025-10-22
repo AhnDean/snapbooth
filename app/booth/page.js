@@ -506,38 +506,23 @@ export default function BoothPage() {
                 )}
               </div>
 
-              {/* 카운트다운 오버레이 */}
-              <div className="relative">
-                <Camera
-                  onCapture={handle4CutCapture}
-                  selectedFrame={selectedFrame}
-                  className="w-full"
-                  ref={cameraRef}
-                  autoCapture={isAutoMode && countdown === 0 && fourCutPhotos.length < 4 && !isReviewingPhoto}
-                  is4CutMode={true}
-                  isReviewingPhoto={isReviewingPhoto}
-                  reviewPhoto={lastCapturedPhoto}
-                  onProceedNext={proceedToNextPhoto}
-                  onRetake={retakeCurrentPhoto}
-                />
-
+              {/* 알림 영역 (카메라 프레임 위) */}
+              <div className="mb-4 min-h-[60px]">
                 {/* 자동 모드 - 카운트다운 표시 */}
                 {isAutoMode && countdown > 0 && (
-                  <div className="absolute top-4 left-4 z-10 pointer-events-none">
-                    <div className="bg-black bg-opacity-60 px-4 py-2 rounded-xl flex items-center gap-3">
-                      <div className="text-4xl font-bold text-white animate-pulse">
-                        {countdown}
-                      </div>
-                      <div className="text-sm text-white">
-                        {fourCutPhotos.length + 1}/4
-                      </div>
+                  <div className="bg-black bg-opacity-90 px-6 py-3 rounded-xl flex items-center justify-center gap-3">
+                    <div className="text-5xl font-bold text-white animate-pulse">
+                      {countdown}
+                    </div>
+                    <div className="text-lg text-white font-medium">
+                      {fourCutPhotos.length + 1}/4 준비 중...
                     </div>
                   </div>
                 )}
 
                 {/* 자동 모드 - 촬영 진행 표시 */}
                 {isAutoMode && countdown === 0 && fourCutPhotos.length < 4 && (
-                  <div className="absolute top-4 left-4 right-4 bg-white bg-opacity-90 rounded-lg p-3 z-10">
+                  <div className="bg-blue-500 bg-opacity-90 rounded-xl p-4">
                     <div className="flex gap-2 justify-center">
                       {[0, 1, 2, 3].map((index) => (
                         <div
@@ -570,12 +555,28 @@ export default function BoothPage() {
 
                 {/* 사진 확인 중 - 안내 메시지 */}
                 {isReviewingPhoto && lastCapturedPhoto && (
-                  <div className="absolute top-4 left-4 right-4 bg-green-500 bg-opacity-90 rounded-lg p-3 z-10">
-                    <div className="text-center text-white font-semibold">
+                  <div className="bg-green-500 bg-opacity-90 rounded-xl p-4">
+                    <div className="text-center text-white font-semibold text-lg">
                       📸 {fourCutPhotos.length + 1}번째 사진 확인 중 - 다시 찍기 또는 촬영 버튼으로 다음 단계
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* 카메라 영역 */}
+              <div className="relative">
+                <Camera
+                  onCapture={handle4CutCapture}
+                  selectedFrame={selectedFrame}
+                  className="w-full"
+                  ref={cameraRef}
+                  autoCapture={isAutoMode && countdown === 0 && fourCutPhotos.length < 4 && !isReviewingPhoto}
+                  is4CutMode={true}
+                  isReviewingPhoto={isReviewingPhoto}
+                  reviewPhoto={lastCapturedPhoto}
+                  onProceedNext={proceedToNextPhoto}
+                  onRetake={retakeCurrentPhoto}
+                />
               </div>
 
               {/* 왼쪽 하단 버튼들 제거 - 우측으로 이동 */}
