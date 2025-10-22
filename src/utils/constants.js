@@ -117,6 +117,14 @@ export const IMAGE_CONFIG = {
   format: 'png'
 };
 
+// 출력 해상도 표준화 (4-5MB 목표)
+export const OUTPUT_RESOLUTION = {
+  width: 1600,
+  height: 1200,
+  quality: 0.95,
+  format: 'png'
+};
+
 // 에러 메시지
 export const ERROR_MESSAGES = {
   CAMERA_NOT_FOUND: '카메라를 찾을 수 없습니다. 카메라가 연결되어 있는지 확인해주세요.',

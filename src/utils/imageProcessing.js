@@ -1,6 +1,6 @@
 // 이미지 처리 유틸리티 함수들
 
-import { IMAGE_CONFIG, FILTERS } from './constants';
+import { IMAGE_CONFIG, FILTERS, OUTPUT_RESOLUTION } from './constants';
 
 /**
  * 이미지에 프레임을 합성하는 함수
@@ -535,5 +535,59 @@ export const analyzeImage = (dataUrl) => {
     };
 
     img.src = dataUrl;
+  });
+};
+
+/**
+ * 표준 해상도로 이미지 정규화
+ * @param {string} imageDataUrl - 원본 이미지 Data URL
+ * @returns {Promise<string>} - 정규화된 이미지 Data URL
+ */
+export const normalizeResolution = (imageDataUrl) => {
+  const { width, height, quality, format } = OUTPUT_RESOLUTION;
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = width;
+      canvas.height = height;
+
+      // 고품질 리샘플링 설정
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // 4:3 비율 유지하며 크롭
+      const sourceRatio = img.width / img.height;
+      const targetRatio = width / height;
+
+      let sx = 0, sy = 0, sw = img.width, sh = img.height;
+
+      if (sourceRatio > targetRatio) {
+        // 좌우 크롭 (원본이 더 넓은 경우)
+        sw = img.height * targetRatio;
+        sx = (img.width - sw) / 2;
+      } else {
+        // 상하 크롭 (원본이 더 높은 경우)
+        sh = img.width / targetRatio;
+        sy = (img.height - sh) / 2;
+      }
+
+      // 크롭된 영역을 표준 해상도로 그리기
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
+
+      // 포맷에 따라 Data URL 생성
+      const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+      resolve(canvas.toDataURL(mimeType, quality));
+    };
+
+    img.onerror = () => {
+      reject(new Error('이미지 정규화 실패'));
+    };
+
+    img.src = imageDataUrl;
   });
 };

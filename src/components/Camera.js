@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { CAMERA_CONSTRAINTS, ERROR_MESSAGES } from '../utils/constants';
+import { normalizeResolution } from '../utils/imageProcessing';
 
 const Camera = ({
   onCapture,
@@ -99,11 +100,14 @@ const Camera = ({
         // 4:3 비율로 크롭
         const croppedImage = await cropTo4x3(imageSrc);
 
+        // 표준 해상도로 정규화 (1600x1200 PNG)
+        const normalizedImage = await normalizeResolution(croppedImage);
+
         // 4컷 모드가 아닐 때만 capturedImage를 저장
         if (!is4CutMode) {
-          setCapturedImage(croppedImage);
+          setCapturedImage(normalizedImage);
         }
-        onCapture && onCapture(croppedImage);
+        onCapture && onCapture(normalizedImage);
 
         // 촬영 성공 피드백
         setTimeout(() => {
