@@ -342,7 +342,7 @@ export default function BoothPage() {
         console.log('🔗 사진 URL:', uploadResult.url);
       } else {
         console.error('업로드 실패:', uploadResult.error);
-        showNotification('⚠️ 클라우드 저장 실패 (로컬 다운로드는 가능)', 'error');
+        showNotification(`⚠️ 저장 실패: ${uploadResult.error || '알 수 없는 오류'}`, 'error');
       }
     } catch (error) {
       console.error('4컷 합성 실패:', error);
