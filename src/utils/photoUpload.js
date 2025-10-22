@@ -25,7 +25,7 @@ export async function uploadPhotoToCloud(imageDataUrl) {
     // 4. 안전한 파일명 생성 (타임스탬프 + UUID)
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
-    const fileName = `${timestamp}_${randomString}.png`;
+    const fileName = `${timestamp}_${randomString}.jpg`;
     const filePath = `uploads/${fileName}`;
 
     console.log('📤 업로드 시작:', filePath);
@@ -34,7 +34,7 @@ export async function uploadPhotoToCloud(imageDataUrl) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('photos')
       .upload(filePath, blob, {
-        contentType: 'image/png',
+        contentType: 'image/jpeg',
         cacheControl: '3600',
         upsert: false // 덮어쓰기 방지
       });

@@ -218,7 +218,7 @@ export const create4CutLayout = async (photos, frameUrl = null, options = {}) =>
     ctx.fillText(footerText, canvas.width / 2, canvas.height - padding / 2);
   }
 
-  return canvas.toDataURL('image/png', IMAGE_CONFIG.quality);
+  return canvas.toDataURL('image/jpeg', 0.9);
 };
 
 /**
@@ -284,7 +284,7 @@ export const create2x2Layout = async (photos, frameUrl = null, options = {}) => 
     }
   }
 
-  return canvas.toDataURL('image/png', IMAGE_CONFIG.quality);
+  return canvas.toDataURL('image/jpeg', 0.9);
 };
 
 /**
