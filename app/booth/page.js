@@ -309,11 +309,11 @@ export default function BoothPage() {
     setIsProcessing(true);
 
     try {
+      // 원본 해상도 유지 - photoWidth와 photoHeight를 지정하지 않으면 원본 크기 유지
       const options = {
-        photoWidth: 480,  // 4:3 비율로 변경 (촬영 화면과 동일)
-        photoHeight: 360,
-        spacing: 15,
-        padding: 30,
+        // photoWidth와 photoHeight 제거 - imageProcessing.js에서 원본 크기 사용
+        spacing: 20,
+        padding: 40,
         backgroundColor: backgroundColor,
         footerText: new Date().toLocaleDateString('ko-KR')
       };

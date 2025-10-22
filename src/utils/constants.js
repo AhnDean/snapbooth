@@ -3,8 +3,8 @@
 // 카메라 설정
 export const CAMERA_CONSTRAINTS = {
   video: {
-    width: { ideal: 3840, min: 640 },
-    height: { ideal: 2160, min: 480 },
+    width: { ideal: 7680, min: 1280 }, // 8K 해상도 요청
+    height: { ideal: 4320, min: 720 },
     aspectRatio: { ideal: 0.75 }, // 3:4 세로 비율 선호
     facingMode: "user", // 전면 카메라
     frameRate: { ideal: 30, min: 15 }

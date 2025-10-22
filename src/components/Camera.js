@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { CAMERA_CONSTRAINTS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../utils/constants';
+import { CAMERA_CONSTRAINTS, ERROR_MESSAGES } from '../utils/constants';
 
 const Camera = ({
   onCapture,
@@ -198,7 +198,7 @@ const Camera = ({
                 }}
                 onUserMediaError={handleWebcamError}
                 className="w-full h-full object-cover"
-                mirrored={facingMode === 'user'}
+                mirrored={false}
               />
 
               {/* 프레임 오버레이 */}
