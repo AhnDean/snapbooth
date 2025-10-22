@@ -26,6 +26,7 @@ export default function BoothPage() {
   const [isAutoMode, setIsAutoMode] = useState(false); // 자동/수동 모드
   const [lastCapturedPhoto, setLastCapturedPhoto] = useState(null); // 방금 찍은 사진
   const [isReviewingPhoto, setIsReviewingPhoto] = useState(false); // 사진 확인 중
+  const [photoCode, setPhotoCode] = useState(null); // 업로드된 사진 코드
   const countdownTimerRef = useRef(null);
   const cameraRef = useRef(null);
 
@@ -207,6 +208,7 @@ export default function BoothPage() {
     // 4컷 촬영 초기화
     setFourCutPhotos([]);
     setCountdown(5);
+    setPhotoCode(null); // 코드 초기화
   };
 
   // 촬영 초기화
@@ -337,6 +339,7 @@ export default function BoothPage() {
       const uploadResult = await uploadPhotoToCloud(result);
 
       if (uploadResult.success) {
+        setPhotoCode(uploadResult.code); // 코드를 state에 저장
         showNotification(`✅ 저장 완료! 코드: ${uploadResult.code}`, 'success');
         console.log('📸 사진 코드:', uploadResult.code);
         console.log('🔗 사진 URL:', uploadResult.url);
@@ -635,6 +638,18 @@ export default function BoothPage() {
                     alt="완성된 4컷 사진"
                     className="w-full rounded-lg shadow-lg"
                   />
+
+                  {/* 사진 코드 표시 */}
+                  {photoCode && (
+                    <div className="bg-green-50 border-2 border-green-500 rounded-xl p-4 text-center">
+                      <p className="text-sm text-gray-600 mb-1">📸 사진 코드</p>
+                      <p className="text-3xl font-bold text-green-600 tracking-widest">{photoCode}</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        이 코드로 30일 동안 사진을 찾을 수 있습니다
+                      </p>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     {/* 사진 인쇄 버튼 */}
                     <button
