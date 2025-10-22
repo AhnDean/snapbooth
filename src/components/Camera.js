@@ -21,6 +21,7 @@ const Camera = ({
   const [error, setError] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [facingMode, setFacingMode] = useState('user'); // 'user' = 전면, 'environment' = 후면
+  const [cameraResolution, setCameraResolution] = useState(null);
 
   // 이미지를 4:3 비율로 크롭
   const cropTo4x3 = (imageDataUrl) => {
@@ -77,7 +78,9 @@ const Camera = ({
       // 실제 적용된 해상도 확인 (개발용)
       const video = webcamRef.current.video;
       if (video) {
-        console.log('실제 카메라 해상도:', video.videoWidth, 'x', video.videoHeight);
+        const resolution = `${video.videoWidth} x ${video.videoHeight}`;
+        console.log('실제 카메라 해상도:', resolution);
+        setCameraResolution(resolution);
       }
 
       const imageSrc = webcamRef.current.getScreenshot();
@@ -321,11 +324,16 @@ const Camera = ({
       </div>
 
       {/* 카메라 상태 표시 */}
-      <div className="flex justify-center mt-4">
+      <div className="flex justify-center mt-4 gap-3">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           카메라 켜짐 ({facingMode === 'user' ? '전면' : '후면'})
         </div>
+        {cameraResolution && (
+          <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            해상도: {cameraResolution}
+          </div>
+        )}
       </div>
     </div>
   );
