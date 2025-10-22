@@ -370,7 +370,9 @@ export default function BoothPage() {
   // 알림 표시
   const showNotification = (message, type = 'info') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+    // 에러 메시지는 10초, 나머지는 5초 표시
+    const duration = type === 'error' ? 10000 : 5000;
+    setTimeout(() => setNotification(null), duration);
   };
 
   // 프레임 갤러리 토글
