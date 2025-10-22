@@ -141,9 +141,14 @@ export const create4CutLayout = async (photos, frameUrl = null, options = {}) =>
     throw new Error('정확히 4장의 사진이 필요합니다.');
   }
 
+  // 첫 번째 사진의 원본 크기를 얻기 위해 먼저 로드
+  const firstImg = await loadImage(photos[0]);
+  const originalWidth = firstImg.width;
+  const originalHeight = firstImg.height;
+
   const {
-    photoWidth = 560,
-    photoHeight = 360,
+    photoWidth = originalWidth,  // 원본 해상도 유지
+    photoHeight = originalHeight, // 원본 해상도 유지
     spacing = 20,
     padding = 40,
     backgroundColor = '#ffffff',
