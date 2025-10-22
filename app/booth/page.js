@@ -6,6 +6,7 @@ import Camera from '../../src/components/Camera';
 import FrameGallery from '../../src/components/FrameGallery';
 import { applyFrame, downloadImage, generateFilename, create4CutLayout } from '../../src/utils/imageProcessing';
 import { FRAMES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../src/utils/constants';
+import { uploadPhotoToCloud } from '../../src/utils/photoUpload';
 
 export default function BoothPage() {
   const [selectedFrame, setSelectedFrame] = useState(null);
@@ -326,8 +327,20 @@ export default function BoothPage() {
 
       setProcessedPhoto(result);
       setCapturedPhoto(result);
-      // 촬영 완료 (4컷 배열은 유지하여 모니터링에서 확인 가능)
       showNotification('4컷 이미지 생성 완료!', 'success');
+
+      // 클라우드에 자동 업로드
+      showNotification('클라우드에 저장 중...', 'info');
+      const uploadResult = await uploadPhotoToCloud(result);
+
+      if (uploadResult.success) {
+        showNotification(`✅ 저장 완료! 코드: ${uploadResult.code}`, 'success');
+        console.log('📸 사진 코드:', uploadResult.code);
+        console.log('🔗 사진 URL:', uploadResult.url);
+      } else {
+        console.error('업로드 실패:', uploadResult.error);
+        showNotification('⚠️ 클라우드 저장 실패 (로컬 다운로드는 가능)', 'error');
+      }
     } catch (error) {
       console.error('4컷 합성 실패:', error);
       showNotification('4컷 이미지 생성 실패', 'error');
