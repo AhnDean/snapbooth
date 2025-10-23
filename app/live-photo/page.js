@@ -316,7 +316,8 @@ function LivePhotoContent() {
           gap: '20px',
           gridTemplateColumns: layoutType === '2x2' ? 'repeat(2, 280px)' : '1fr',
           gridTemplateRows: layoutType === '2x2' ? 'repeat(2, 280px)' : 'repeat(4, auto)',
-          maxWidth: '90vw'
+          maxWidth: '90vw',
+          maxHeight: '90vh'
         }}
       >
         {videoBlobUrls.map((videoBlobUrl, index) => (
@@ -324,8 +325,8 @@ function LivePhotoContent() {
             key={index}
             className="relative bg-gray-900 rounded overflow-hidden"
             style={{
-              width: layoutType === '2x2' ? '280px' : 'auto',
-              aspectRatio: layoutType === '2x2' ? '1 / 1' : 'auto'
+              width: '100%',
+              aspectRatio: layoutType === '2x2' ? '1 / 1' : '4 / 3'
             }}
           >
             <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
