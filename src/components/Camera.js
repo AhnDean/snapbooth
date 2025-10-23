@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import Webcam from 'react-webcam';
-import { CAMERA_CONSTRAINTS, ERROR_MESSAGES } from '../utils/constants';
+import { CAMERA_CONSTRAINTS, PREFERRED_RESOLUTIONS, ERROR_MESSAGES } from '../utils/constants';
 import { normalizeResolution } from '../utils/imageProcessing';
 
 const Camera = forwardRef(({
@@ -24,11 +24,67 @@ const Camera = forwardRef(({
   const [facingMode, setFacingMode] = useState('user'); // 'user' = 전면, 'environment' = 후면
   const [cameraResolution, setCameraResolution] = useState(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+  const [optimalConstraints, setOptimalConstraints] = useState(CAMERA_CONSTRAINTS);
 
   // stream을 외부에서 접근할 수 있도록 노출
   useImperativeHandle(ref, () => ({
     stream: webcamRef.current?.stream || null
   }));
+
+  // 카메라의 최적 해상도 감지
+  useEffect(() => {
+    const detectOptimalResolution = async () => {
+      try {
+        console.log('🔍 카메라 해상도 감지 시작...');
+
+        // 임시 스트림으로 지원 해상도 테스트
+        for (const resolution of PREFERRED_RESOLUTIONS) {
+          try {
+            const testConstraints = {
+              video: {
+                width: { exact: resolution.width },
+                height: { exact: resolution.height },
+                facingMode: 'user'
+              }
+            };
+
+            console.log(`  🧪 테스트 중: ${resolution.label}`);
+            const testStream = await navigator.mediaDevices.getUserMedia(testConstraints);
+
+            // 성공하면 이 해상도 사용
+            const videoTrack = testStream.getVideoTracks()[0];
+            const settings = videoTrack.getSettings();
+            testStream.getTracks().forEach(track => track.stop()); // 테스트 스트림 종료
+
+            console.log(`  ✅ 최적 해상도 발견: ${resolution.label} (실제: ${settings.width}x${settings.height})`);
+
+            // 최적 constraints 설정
+            setOptimalConstraints({
+              ...CAMERA_CONSTRAINTS,
+              video: {
+                ...CAMERA_CONSTRAINTS.video,
+                width: { ideal: resolution.width },
+                height: { ideal: resolution.height },
+                aspectRatio: { ideal: 4/3 }
+              }
+            });
+
+            return; // 찾았으면 종료
+          } catch (err) {
+            console.log(`  ❌ ${resolution.label} 지원 안 함`);
+            continue; // 다음 해상도 테스트
+          }
+        }
+
+        // 모든 해상도 실패 시 기본값 사용
+        console.log('⚠️ 선호 해상도를 찾을 수 없어 브라우저 기본값 사용');
+      } catch (err) {
+        console.error('❌ 해상도 감지 실패:', err);
+      }
+    };
+
+    detectOptimalResolution();
+  }, []);
 
   // DSLR 카메라 자동 선택
   useEffect(() => {
@@ -242,7 +298,7 @@ const Camera = forwardRef(({
                 screenshotFormat="image/png"
                 screenshotQuality={1.0}
                 videoConstraints={{
-                  ...CAMERA_CONSTRAINTS.video,
+                  ...optimalConstraints.video,
                   deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
                   facingMode: selectedDeviceId ? undefined : facingMode // deviceId가 있으면 facingMode 무시
                 }}

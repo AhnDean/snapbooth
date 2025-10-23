@@ -1,16 +1,25 @@
 // 포토부스 앱 상수 정의
 
-// 카메라 설정
+// 카메라 설정 (동적 해상도 감지를 위한 기본값)
 export const CAMERA_CONSTRAINTS = {
   video: {
-    width: { ideal: 1024, min: 640 }, // 소니 웹캠 프로그램 지원 해상도
-    height: { ideal: 576, min: 480 },
-    aspectRatio: { ideal: 16/9 }, // 16:9 비율
+    // 해상도는 동적으로 감지하도록 하고, 여기서는 기본값만 설정
+    // Camera 컴포넌트에서 getUserMedia 전에 getSupportedConstraints로 최적 해상도 선택
     facingMode: "user", // 전면 카메라
-    frameRate: { ideal: 30, min: 15 }
+    frameRate: { ideal: 30, min: 24 }
   },
   audio: false
 };
+
+// 선호 해상도 목록 (4:3 비율, 높은 순서대로)
+export const PREFERRED_RESOLUTIONS = [
+  { width: 1920, height: 1440, label: 'Full HD+ (1920x1440)' },
+  { width: 1600, height: 1200, label: 'UXGA (1600x1200)' },
+  { width: 1280, height: 960, label: 'HD+ (1280x960)' },
+  { width: 1024, height: 768, label: 'XGA (1024x768)' },
+  { width: 800, height: 600, label: 'SVGA (800x600)' },
+  { width: 640, height: 480, label: 'VGA (640x480)' }
+];
 
 // 프레임 목록 (5개)
 export const FRAMES = [

@@ -767,20 +767,61 @@ export default function BoothPage() {
                       {/* 라이브 포토 보기 버튼 */}
                       <button
                         onClick={async () => {
-                          // 동영상을 Data URL로 변환하여 sessionStorage에 저장
-                          const videoDataUrls = await Promise.all(
-                            recordedVideos.map(async (blob) => {
-                              return await new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result);
-                                reader.readAsDataURL(blob);
-                              });
-                            })
-                          );
-                          sessionStorage.setItem('livePhotoVideos', JSON.stringify(videoDataUrls));
+                          try {
+                            console.log('🎥 라이브 포토 버튼 클릭됨');
+                            console.log('📹 녹화된 비디오 개수:', recordedVideos.length);
 
-                          // 새 탭에서 라이브 포토 페이지 열기
-                          window.open(`/live-photo?layout=${layoutType}`, '_blank');
+                            // Safari 팝업 차단 방지: async 작업 전에 새 탭을 먼저 열기
+                            const newWindow = window.open('about:blank', '_blank');
+                            if (!newWindow) {
+                              alert('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+                              return;
+                            }
+
+                            // 동영상을 Data URL로 변환
+                            console.log('🔄 비디오를 Data URL로 변환 중...');
+                            const videoDataUrls = await Promise.all(
+                              recordedVideos.map(async (blob, index) => {
+                                console.log(`  - 비디오 ${index + 1} 변환 중... (크기: ${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+                                return await new Promise((resolve, reject) => {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    console.log(`  ✅ 비디오 ${index + 1} 변환 완료`);
+                                    resolve(reader.result);
+                                  };
+                                  reader.onerror = (error) => {
+                                    console.error(`  ❌ 비디오 ${index + 1} 변환 실패:`, error);
+                                    reject(error);
+                                  };
+                                  reader.readAsDataURL(blob);
+                                });
+                              })
+                            );
+
+                            // sessionStorage에 저장
+                            console.log('💾 sessionStorage에 저장 중...');
+                            const dataString = JSON.stringify(videoDataUrls);
+                            console.log(`📊 데이터 크기: ${(dataString.length / 1024 / 1024).toFixed(2)}MB`);
+
+                            try {
+                              sessionStorage.setItem('livePhotoVideos', dataString);
+                              console.log('✅ sessionStorage 저장 완료');
+                            } catch (storageError) {
+                              console.error('❌ sessionStorage 저장 실패:', storageError);
+                              newWindow.close();
+                              alert('비디오 데이터가 너무 커서 저장할 수 없습니다. 다시 시도해주세요.');
+                              return;
+                            }
+
+                            // 새 탭에 URL 설정
+                            const livePhotoUrl = `${window.location.origin}/live-photo?layout=${layoutType}`;
+                            console.log('🔗 새 탭 열기:', livePhotoUrl);
+                            newWindow.location.href = livePhotoUrl;
+                            console.log('✅ 라이브 포토 페이지 열림');
+                          } catch (error) {
+                            console.error('💥 라이브 포토 오류:', error);
+                            alert('라이브 포토를 열 수 없습니다: ' + error.message);
+                          }
                         }}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all shadow-lg mb-2"
                       >
