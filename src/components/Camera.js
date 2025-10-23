@@ -177,7 +177,8 @@ const Camera = forwardRef(({
 
     try {
       // 촬영 시작 전 콜백 호출 (동영상 녹화 시작 등)
-      if (onCaptureStart && is4CutMode) {
+      // 리뷰 모드가 아닐 때만 녹화 시작 (이미 촬영했으면 다음 단계로)
+      if (onCaptureStart && is4CutMode && !isReviewingPhoto) {
         onCaptureStart();
       }
 

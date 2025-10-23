@@ -34,11 +34,13 @@ function LivePhotoContent() {
         // Supabase에서 사진 데이터 가져오기
         const result = await findPhotoByCode(code);
 
-        if (result.success && result.photo.video_urls) {
+        console.log('📸 사진 데이터:', result);
+
+        if (result.success && result.photo.video_urls && result.photo.video_urls.length > 0) {
           console.log('✅ 동영상 URL 찾음:', result.photo.video_urls);
           setVideoUrls(result.photo.video_urls);
         } else {
-          console.warn('⚠️ 동영상이 없습니다');
+          console.warn('⚠️ 동영상이 없습니다. video_urls:', result.photo?.video_urls);
           setError('라이브 포토가 없습니다.');
         }
 

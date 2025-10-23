@@ -594,9 +594,9 @@ export default function BoothPage() {
                       showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
                       // 동영상 녹화는 카운트다운이 시작되면 자동으로 시작됨
                     }}
-                    className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+                    className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    ⏱️ 자동 촬영 + 🎥 동영상
+                    🎥 라이브 포토 촬영 시작
                   </button>
                 )}
 
