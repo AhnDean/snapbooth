@@ -112,6 +112,19 @@ function LivePhotoContent() {
         return;
       }
 
+      // 모든 비디오가 재생 중인지 확인하고, 일시정지된 비디오는 현재 프레임 캡처를 위해 play 호출
+      await Promise.all(readyVideos.map(async (video) => {
+        if (video.paused) {
+          try {
+            await video.play();
+            // 잠시 대기하여 프레임이 렌더링되도록 함
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (e) {
+            console.warn('비디오 재생 시도 실패 (무음이므로 괜찮음):', e);
+          }
+        }
+      }));
+
       // 첫 번째 비디오의 원본 크기 가져오기
       const firstVideo = readyVideos[0];
       const videoWidth = firstVideo.videoWidth;
@@ -167,50 +180,68 @@ function LivePhotoContent() {
 
       console.log('🎨 캔버스 생성 완료:', canvas.width, 'x', canvas.height);
 
-      // Blob 생성
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          alert('이미지 생성에 실패했습니다.');
-          return;
-        }
-
-        console.log('📦 Blob 생성:', Math.round(blob.size / 1024), 'KB');
-
-        const filename = `chupbox_live_photo_${Date.now()}.jpg`;
-        const file = new File([blob], filename, { type: 'image/jpeg' });
-
-        // Web Share API 시도
-        if (navigator.share && navigator.canShare) {
-          const shareData = { files: [file], title: 'CHUPBOX 라이브 포토' };
-
-          if (navigator.canShare(shareData)) {
-            try {
-              await navigator.share(shareData);
-              console.log('✅ 공유 완료');
-              return;
-            } catch (error) {
-              if (error.name === 'AbortError') {
-                return;
-              }
-              console.log('⚠️ 공유 실패, 다운로드로 전환');
+      // Blob 생성을 Promise로 래핑
+      const createBlob = () => {
+        return new Promise((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Blob 생성 실패'));
             }
-          }
-        }
+          }, 'image/jpeg', 0.95);
+        });
+      };
 
-        // 다운로드 fallback
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
+      const blob = await createBlob();
+      console.log('📦 Blob 생성:', Math.round(blob.size / 1024), 'KB');
+
+      const filename = `chupbox_live_photo_${Date.now()}.jpg`;
+
+      // Web Share API 시도 (iPhone Safari)
+      if (navigator.share) {
+        try {
+          const file = new File([blob], filename, { type: 'image/jpeg' });
+          const shareData = { files: [file], title: 'CHUPBOX 라이브 포토', text: '라이브 포토' };
+
+          console.log('📤 Web Share API 시도...');
+          await navigator.share(shareData);
+          console.log('✅ 공유 완료');
+          alert('✅ 사진이 저장되었습니다! 사진 앱에서 확인하세요.');
+          return;
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            console.log('❌ 사용자가 공유 취소');
+            return;
+          }
+          console.error('⚠️ 공유 실패:', error);
+          alert('공유 실패: ' + error.message + '\n다운로드로 시도합니다.');
+        }
+      }
+
+      // 다운로드 fallback
+      console.log('💾 다운로드 시작...');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      // 약간의 지연 후 정리
+      setTimeout(() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        console.log('✅ 다운로드 완료');
-      }, 'image/jpeg', 0.95);
+      }, 100);
+
+      console.log('✅ 다운로드 완료');
+      alert('✅ 다운로드 완료! 다운로드 폴더를 확인하세요.');
+
     } catch (error) {
       console.error('❌ 저장 실패:', error);
-      alert('라이브 포토 저장에 실패했습니다: ' + error.message);
+      console.error('에러 스택:', error.stack);
+      alert('라이브 포토 저장에 실패했습니다.\n\n에러: ' + error.message + '\n\n콘솔 로그를 확인해주세요.');
     }
   };
 
