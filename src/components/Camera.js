@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import Webcam from 'react-webcam';
 import { CAMERA_CONSTRAINTS, ERROR_MESSAGES } from '../utils/constants';
 import { normalizeResolution } from '../utils/imageProcessing';
 
-const Camera = ({
+const Camera = forwardRef(({
   onCapture,
   selectedFrame = null,
   className = '',
@@ -15,7 +15,7 @@ const Camera = ({
   reviewPhoto = null,
   onProceedNext = null,
   onRetake = null
-}) => {
+}, ref) => {
   const webcamRef = useRef(null);
   const [isWebcamOn, setIsWebcamOn] = useState(true); // 자동으로 켜짐
   const [capturedImage, setCapturedImage] = useState(null);
@@ -23,6 +23,51 @@ const Camera = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const [facingMode, setFacingMode] = useState('user'); // 'user' = 전면, 'environment' = 후면
   const [cameraResolution, setCameraResolution] = useState(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+
+  // stream을 외부에서 접근할 수 있도록 노출
+  useImperativeHandle(ref, () => ({
+    stream: webcamRef.current?.stream || null
+  }));
+
+  // DSLR 카메라 자동 선택
+  useEffect(() => {
+    const selectBestCamera = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+        console.log('🎥 사용 가능한 카메라:', videoDevices.map(d => ({
+          label: d.label,
+          deviceId: d.deviceId
+        })));
+
+        // DSLR 또는 외장 카메라 우선 선택
+        // 일반적으로 "USB", "Video Capture", "Capture", "DSLR" 등의 키워드 포함
+        const dslrCamera = videoDevices.find(device =>
+          device.label.toLowerCase().includes('usb') ||
+          device.label.toLowerCase().includes('capture') ||
+          device.label.toLowerCase().includes('video') ||
+          device.label.toLowerCase().includes('dslr') ||
+          device.label.toLowerCase().includes('캡처') ||
+          device.label.toLowerCase().includes('외장')
+        );
+
+        if (dslrCamera) {
+          console.log('✅ DSLR/외장 카메라 선택:', dslrCamera.label);
+          setSelectedDeviceId(dslrCamera.deviceId);
+        } else if (videoDevices.length > 0) {
+          // DSLR이 없으면 첫 번째 카메라 사용
+          console.log('⚠️ DSLR을 찾을 수 없어 기본 카메라 사용:', videoDevices[0].label);
+          setSelectedDeviceId(videoDevices[0].deviceId);
+        }
+      } catch (err) {
+        console.error('카메라 목록 가져오기 실패:', err);
+      }
+    };
+
+    selectBestCamera();
+  }, []);
 
   // 이미지를 4:3 비율로 크롭
   const cropTo4x3 = (imageDataUrl) => {
@@ -198,7 +243,8 @@ const Camera = ({
                 screenshotQuality={1.0}
                 videoConstraints={{
                   ...CAMERA_CONSTRAINTS.video,
-                  facingMode: facingMode
+                  deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+                  facingMode: selectedDeviceId ? undefined : facingMode // deviceId가 있으면 facingMode 무시
                 }}
                 onUserMediaError={handleWebcamError}
                 className="w-full h-full object-cover"
@@ -351,6 +397,8 @@ const Camera = ({
       </div>
     </div>
   );
-};
+});
+
+Camera.displayName = 'Camera';
 
 export default Camera;

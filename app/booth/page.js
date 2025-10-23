@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import QRCode from 'qrcode';
 import Camera from '../../src/components/Camera';
 import FrameGallery from '../../src/components/FrameGallery';
 import { applyFrame, downloadImage, generateFilename, create4CutLayout } from '../../src/utils/imageProcessing';
 import { FRAMES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../src/utils/constants';
 import { uploadPhotoToCloud } from '../../src/utils/photoUpload';
+import videoRecorder from '../../src/utils/videoRecorder';
 
 // Force dynamic rendering to avoid build-time errors with environment variables
 export const dynamic = 'force-dynamic';
@@ -34,6 +36,14 @@ export default function BoothPage() {
   const [layoutType, setLayoutType] = useState('1x4'); // 1x4, 2x2
   const [countdownDuration, setCountdownDuration] = useState(5); // 3, 5, 7 초
   const [showFrameModal, setShowFrameModal] = useState(false);
+
+  // 동영상 녹화 상태
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedVideos, setRecordedVideos] = useState([]); // 녹화된 동영상 배열 (4개)
+  const [currentVideoBlob, setCurrentVideoBlob] = useState(null); // 현재 녹화 중인 비디오
+
+  // QR 코드 상태
+  const [qrCodeUrl, setQrCodeUrl] = useState(null);
 
   // 사진 촬영 핸들러
   const handlePhotoCapture = async (photoDataUrl) => {
@@ -200,6 +210,46 @@ export default function BoothPage() {
     }
   };
 
+  // 동영상 녹화 시작 (각 컷마다)
+  const startVideoRecording = async () => {
+    if (!cameraRef.current || !cameraRef.current.stream) {
+      console.error('카메라 스트림을 찾을 수 없습니다');
+      return;
+    }
+
+    try {
+      await videoRecorder.startRecording(cameraRef.current.stream);
+      setIsRecording(true);
+      console.log(`🎥 동영상 녹화 시작 (${fourCutPhotos.length + 1}/4)`);
+    } catch (error) {
+      console.error('녹화 시작 실패:', error);
+    }
+  };
+
+  // 동영상 녹화 종료 및 저장
+  const stopVideoRecording = async () => {
+    if (!videoRecorder.getIsRecording()) {
+      console.warn('녹화 중이 아닙니다');
+      return null;
+    }
+
+    try {
+      const videoBlob = await videoRecorder.stopRecording();
+      setIsRecording(false);
+
+      console.log(`✅ ${fourCutPhotos.length + 1}번째 동영상 녹화 완료:`, {
+        size: `${(videoBlob.size / 1024 / 1024).toFixed(2)} MB`,
+        type: videoBlob.type
+      });
+
+      return videoBlob;
+    } catch (error) {
+      console.error('녹화 종료 실패:', error);
+      setIsRecording(false);
+      return null;
+    }
+  };
+
   // 다시 촬영
   const handleRetake = () => {
     setCapturedPhoto(null);
@@ -209,6 +259,11 @@ export default function BoothPage() {
     setFourCutPhotos([]);
     setCountdown(5);
     setPhotoCode(null); // 코드 초기화
+    // 동영상 초기화
+    setRecordedVideos([]);
+    setCurrentVideoBlob(null);
+    setIsRecording(false);
+    videoRecorder.cleanup();
   };
 
   // 촬영 초기화
@@ -223,6 +278,11 @@ export default function BoothPage() {
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
     }
+    // 동영상 초기화
+    setRecordedVideos([]);
+    setCurrentVideoBlob(null);
+    setIsRecording(false);
+    videoRecorder.cleanup();
   };
 
   // 4컷 사진 촬영 핸들러
@@ -231,6 +291,16 @@ export default function BoothPage() {
     if (fourCutPhotos.length >= 4) {
       showNotification('이미 4컷 촬영이 완료되었습니다!', 'info');
       return;
+    }
+
+    // 동영상 녹화 중이면 종료하고 저장
+    let videoBlob = null;
+    if (isRecording) {
+      videoBlob = await stopVideoRecording();
+      if (videoBlob) {
+        setRecordedVideos(prev => [...prev, videoBlob]);
+        console.log(`✅ ${fourCutPhotos.length + 1}번째 동영상 저장 완료`);
+      }
     }
 
     // 자동 모드: 바로 배열에 추가하고 다음 촬영
@@ -248,6 +318,7 @@ export default function BoothPage() {
         // 4장 모두 촬영 완료 - 합성 시작
         setCountdown(0);
         setIsAutoMode(false);
+
         showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
         await create4CutImage(newPhotos);
       }
@@ -258,7 +329,7 @@ export default function BoothPage() {
       setCountdown(0);
       showNotification('사진이 촬영되었습니다. 다시 찍기를 원하면 버튼을 누르세요.', 'success');
     }
-  }, [fourCutPhotos.length, isAutoMode, countdownDuration]);
+  }, [fourCutPhotos.length, isAutoMode, countdownDuration, isRecording]);
 
   // 다음 컷으로 진행 (촬영 버튼을 다시 누르면)
   const proceedToNextPhoto = useCallback(async () => {
@@ -284,6 +355,7 @@ export default function BoothPage() {
       // 4장 모두 촬영 완료 - 합성 시작
       setCountdown(0);
       setIsAutoMode(false);
+
       showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
       await create4CutImage(newPhotos);
     }
@@ -340,9 +412,23 @@ export default function BoothPage() {
 
       if (uploadResult.success) {
         setPhotoCode(uploadResult.code); // 코드를 state에 저장
-        showNotification(`✅ 저장 완료! 코드: ${uploadResult.code}`, 'success');
+
+        // QR 코드 생성 (사진 찾기 URL)
+        const findUrl = `${window.location.origin}/find?code=${uploadResult.code}`;
+        const qrDataUrl = await QRCode.toDataURL(findUrl, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        setQrCodeUrl(qrDataUrl);
+
+        showNotification(`✅ 저장 완료! QR 코드로 사진을 찾을 수 있습니다`, 'success');
         console.log('📸 사진 코드:', uploadResult.code);
         console.log('🔗 사진 URL:', uploadResult.url);
+        console.log('📱 QR 코드 URL:', findUrl);
       } else {
         console.error('업로드 실패:', uploadResult.error);
         showNotification(`⚠️ 저장 실패: ${uploadResult.error || '알 수 없는 오류'}`, 'error');
@@ -358,6 +444,11 @@ export default function BoothPage() {
   // 카운트다운 타이머 (자동 모드일 때만)
   useEffect(() => {
     if (isAutoMode && countdown > 0) {
+      // 카운트다운이 countdownDuration에서 시작할 때 (새로운 컷 시작) 녹화 시작
+      if (countdown === countdownDuration && fourCutPhotos.length < 4) {
+        startVideoRecording();
+      }
+
       countdownTimerRef.current = setTimeout(() => {
         setCountdown(countdown - 1);
       }, 1000);
@@ -368,7 +459,7 @@ export default function BoothPage() {
         clearTimeout(countdownTimerRef.current);
       }
     };
-  }, [isAutoMode, countdown]);
+  }, [isAutoMode, countdown, countdownDuration, fourCutPhotos.length]);
 
   // 알림 표시
   const showNotification = (message, type = 'info') => {
@@ -477,10 +568,11 @@ export default function BoothPage() {
                       setIsAutoMode(true);
                       setCountdown(countdownDuration);
                       showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
+                      // 동영상 녹화는 카운트다운이 시작되면 자동으로 시작됨
                     }}
                     className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    ⏱️ 자동 촬영
+                    ⏱️ 자동 촬영 + 🎥 동영상
                   </button>
                 )}
 
@@ -531,13 +623,22 @@ export default function BoothPage() {
               <div className="mb-4 min-h-[60px]">
                 {/* 자동 모드 - 카운트다운 표시 */}
                 {isAutoMode && countdown > 0 && (
-                  <div className="bg-black bg-opacity-90 px-6 py-3 rounded-xl flex items-center justify-center gap-3">
-                    <div className="text-5xl font-bold text-white animate-pulse">
-                      {countdown}
+                  <div className="bg-black bg-opacity-90 px-6 py-3 rounded-xl">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <div className="text-5xl font-bold text-white animate-pulse">
+                        {countdown}
+                      </div>
+                      <div className="text-lg text-white font-medium">
+                        {fourCutPhotos.length + 1}/4 준비 중...
+                      </div>
                     </div>
-                    <div className="text-lg text-white font-medium">
-                      {fourCutPhotos.length + 1}/4 준비 중...
-                    </div>
+                    {/* 녹화 중 표시 */}
+                    {isRecording && (
+                      <div className="flex items-center justify-center gap-2 text-red-500">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-semibold">🎥 동영상 녹화중</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -639,14 +740,66 @@ export default function BoothPage() {
                     className="w-full rounded-lg shadow-lg"
                   />
 
-                  {/* 사진 코드 표시 */}
-                  {photoCode && (
+                  {/* QR 코드 표시 */}
+                  {qrCodeUrl && (
                     <div className="bg-green-50 border-2 border-green-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
-                      <p className="text-xs sm:text-sm text-gray-600 mb-1">📸 사진 코드</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-green-600 tracking-widest break-all">{photoCode}</p>
-                      <p className="text-xs text-gray-500 mt-1 sm:mt-2">
-                        30일 동안 사진 찾기 가능
+                      <p className="text-xs sm:text-sm text-gray-600 mb-3 font-semibold">📱 사진 찾기 QR 코드</p>
+                      <div className="flex justify-center mb-3">
+                        <img
+                          src={qrCodeUrl}
+                          alt="QR Code"
+                          className="w-40 h-40 border-4 border-white rounded-lg shadow"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        QR 코드를 스캔하면 30일 동안 사진을 찾을 수 있습니다
                       </p>
+                    </div>
+                  )}
+
+                  {/* 라이브 포토 보기 및 동영상 다운로드 */}
+                  {recordedVideos.length > 0 && (
+                    <div className="bg-purple-50 border-2 border-purple-500 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-3 text-center font-semibold">
+                        🎬 라이브 포토 ({recordedVideos.length}개 순간)
+                      </p>
+
+                      {/* 라이브 포토 보기 버튼 */}
+                      <button
+                        onClick={async () => {
+                          // 동영상을 Data URL로 변환하여 sessionStorage에 저장
+                          const videoDataUrls = await Promise.all(
+                            recordedVideos.map(async (blob) => {
+                              return await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(blob);
+                              });
+                            })
+                          );
+                          sessionStorage.setItem('livePhotoVideos', JSON.stringify(videoDataUrls));
+
+                          // 새 탭에서 라이브 포토 페이지 열기
+                          window.open(`/live-photo?layout=${layoutType}`, '_blank');
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all shadow-lg mb-2"
+                      >
+                        🎥 라이브 포토 보기
+                      </button>
+
+                      <p className="text-xs text-gray-500 text-center">
+                        촬영 전 준비하는 모습을 담은 라이브 포토
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 녹화 중 표시 */}
+                  {isRecording && (
+                    <div className="bg-red-50 border-2 border-red-500 rounded-lg p-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <p className="text-sm font-bold text-red-600">🎥 동영상 녹화 중... (10초)</p>
+                      </div>
                     </div>
                   )}
 
@@ -968,6 +1121,7 @@ export default function BoothPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -3,9 +3,9 @@
 // 카메라 설정
 export const CAMERA_CONSTRAINTS = {
   video: {
-    width: { ideal: 7680, min: 1280 }, // 8K 해상도 요청
-    height: { ideal: 4320, min: 720 },
-    aspectRatio: { ideal: 0.75 }, // 3:4 세로 비율 선호
+    width: { ideal: 1024, min: 640 }, // 소니 웹캠 프로그램 지원 해상도
+    height: { ideal: 576, min: 480 },
+    aspectRatio: { ideal: 16/9 }, // 16:9 비율
     facingMode: "user", // 전면 카메라
     frameRate: { ideal: 30, min: 15 }
   },

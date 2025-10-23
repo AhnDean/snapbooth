@@ -1,15 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { findPhotoByCode } from '../../src/utils/photoUpload';
 import { downloadImage } from '../../src/utils/imageProcessing';
 
 export default function FindPhotoPage() {
+  const searchParams = useSearchParams();
   const [code, setCode] = useState('');
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // QR 코드에서 URL 파라미터로 전달된 코드 자동 검색
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl && codeFromUrl.length === 6) {
+      setCode(codeFromUrl);
+      // 자동 검색
+      searchPhotoByCode(codeFromUrl);
+    }
+  }, [searchParams]);
+
+  const searchPhotoByCode = async (searchCode) => {
+    setLoading(true);
+    setError(null);
+    setPhoto(null);
+
+    const result = await findPhotoByCode(searchCode);
+
+    if (result.success) {
+      setPhoto(result.photo);
+    } else {
+      setError(result.error);
+    }
+
+    setLoading(false);
+  };
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -19,19 +47,7 @@ export default function FindPhotoPage() {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setPhoto(null);
-
-    const result = await findPhotoByCode(code);
-
-    if (result.success) {
-      setPhoto(result.photo);
-    } else {
-      setError(result.error);
-    }
-
-    setLoading(false);
+    await searchPhotoByCode(code);
   };
 
   const handleDownload = () => {
