@@ -308,19 +308,19 @@ export default function BoothPage() {
       const newPhotos = [...fourCutPhotos, photoDataUrl];
       setFourCutPhotos(newPhotos);
 
-      if (newPhotos.length < 4) {
-        // 다음 촬영 준비
-        setTimeout(() => {
-          setCountdown(countdownDuration);
-          showNotification(`${newPhotos.length}/4 촬영 완료! ${countdownDuration}초 후 다음 촬영`, 'success');
-        }, 500);
-      } else {
-        // 4장 모두 촬영 완료 - 합성 시작
+      // 4번째 사진 촬영 완료 시 - 합성 시작
+      if (newPhotos.length === 4) {
         setCountdown(0);
         setIsAutoMode(false);
 
         showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
         await create4CutImage(newPhotos);
+      } else {
+        // 다음 촬영 준비 (1, 2, 3번째 사진 후)
+        setTimeout(() => {
+          setCountdown(countdownDuration);
+          showNotification(`${newPhotos.length}/4 촬영 완료! ${countdownDuration}초 후 다음 촬영`, 'success');
+        }, 500);
       }
     } else {
       // 수동 모드: 확인 모드 진입
