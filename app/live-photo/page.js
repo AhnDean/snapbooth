@@ -88,9 +88,9 @@ function LivePhotoContent() {
   // 레이아웃 스타일
   const getGridStyle = () => {
     if (layoutType === '2x2') {
-      return 'grid-cols-2 grid-rows-2 aspect-square';
+      return 'grid-cols-2 grid-rows-2';
     }
-    return 'grid-cols-1 grid-rows-4 aspect-[3/4]';
+    return 'grid-cols-1 grid-rows-4';
   };
 
   // 라이브 포토 화면 캡처하여 다운로드/공유
@@ -265,8 +265,8 @@ function LivePhotoContent() {
       )}
 
       {/* 동영상 그리드 - 4컷 사진과 동일한 비율 */}
-      <div className={`grid ${getGridStyle()} gap-5 bg-white p-10 rounded-xl w-full ${
-        layoutType === '2x2' ? 'max-w-md' : 'max-w-sm'
+      <div className={`grid ${getGridStyle()} gap-5 bg-white p-10 rounded-xl ${
+        layoutType === '2x2' ? 'w-full max-w-2xl' : 'w-full max-w-md'
       }`}>
         {videoUrls.map((videoUrl, index) => {
           return (
