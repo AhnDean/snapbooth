@@ -713,6 +713,7 @@ export default function BoothPage() {
               <div className="relative">
                 <Camera
                   onCapture={handle4CutCapture}
+                  onCaptureStart={startVideoRecording}
                   selectedFrame={selectedFrame}
                   className="w-full"
                   ref={cameraRef}

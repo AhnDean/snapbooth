@@ -7,6 +7,7 @@ import { normalizeResolution } from '../utils/imageProcessing';
 
 const Camera = forwardRef(({
   onCapture,
+  onCaptureStart = null,
   selectedFrame = null,
   className = '',
   autoCapture = false,
@@ -175,6 +176,11 @@ const Camera = forwardRef(({
     if (!webcamRef.current || !isWebcamOn) return;
 
     try {
+      // 촬영 시작 전 콜백 호출 (동영상 녹화 시작 등)
+      if (onCaptureStart && is4CutMode) {
+        onCaptureStart();
+      }
+
       setIsCapturing(true);
 
       // 실제 적용된 해상도 확인 (개발용)

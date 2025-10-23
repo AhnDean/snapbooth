@@ -93,7 +93,7 @@ function LivePhotoContent() {
 
   // 동영상을 캔버스에 합성하여 다운로드/공유
   const handleDownloadComposite = async () => {
-    if (!canvasRef.current || videoBlobs.length === 0) return;
+    if (!canvasRef.current || videoUrls.length === 0) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
