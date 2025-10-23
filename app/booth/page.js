@@ -450,19 +450,19 @@ export default function BoothPage() {
           console.warn('⚠️ 녹화된 동영상이 없습니다. 자동 촬영 모드를 사용했는지 확인하세요.');
         }
 
-        // QR 코드 생성 (사진 찾기 URL) - 핑크/보라 배경
+        // QR 코드 생성 (사진 찾기 URL) - CHUPBOX 빨강 배경
         const findUrl = `${window.location.origin}/find?code=${uploadResult.code}`;
         const qrDataUrl = await QRCode.toDataURL(findUrl, {
           width: 200,
           margin: 2,
           color: {
             dark: '#000000',
-            light: '#FDF2F8' // 핑크 배경
+            light: '#fee' // 연한 빨강
           }
         });
         setQrCodeUrl(qrDataUrl);
 
-        // 라이브 포토 QR 코드 생성 (동영상이 있을 때만) - 보라/파랑 배경
+        // 라이브 포토 QR 코드 생성 (동영상이 있을 때만) - CHUPBOX 노랑 배경
         if (videosToUpload && videosToUpload.length > 0) {
           const livePhotoUrl = `${window.location.origin}/live-photo?code=${uploadResult.code}&layout=${layoutType}`;
           const liveQrDataUrl = await QRCode.toDataURL(livePhotoUrl, {
@@ -470,7 +470,7 @@ export default function BoothPage() {
             margin: 2,
             color: {
               dark: '#000000',
-              light: '#EDE9FE' // 보라 배경
+              light: '#ffd' // 연한 노랑
             }
           });
           setLivePhotoQrCodeUrl(liveQrDataUrl);

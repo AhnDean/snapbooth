@@ -264,8 +264,8 @@ function LivePhotoContent() {
         </div>
       )}
 
-      {/* 동영상 그리드 */}
-      <div className={`grid ${getGridStyle()} gap-2 bg-black p-4 rounded-xl w-full ${
+      {/* 동영상 그리드 - 4컷 사진과 동일한 비율 */}
+      <div className={`grid ${getGridStyle()} gap-5 bg-white p-10 rounded-xl w-full ${
         layoutType === '2x2' ? 'max-w-md' : 'max-w-sm'
       }`}>
         {videoUrls.map((videoUrl, index) => {
