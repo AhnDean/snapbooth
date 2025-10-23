@@ -414,6 +414,9 @@ export default function BoothPage() {
         setPhotoCode(uploadResult.code); // 코드를 state에 저장
 
         // 동영상도 함께 업로드 (있는 경우)
+        console.log('📹 녹화된 동영상 개수:', recordedVideos.length);
+        console.log('📹 녹화된 동영상 데이터:', recordedVideos.map(v => ({ size: v.size, type: v.type })));
+
         if (recordedVideos.length > 0) {
           showNotification(`동영상 업로드 중... (${recordedVideos.length}개)`, 'info');
           console.log(`🎬 동영상 업로드 시작: ${recordedVideos.length}개`);
@@ -435,6 +438,8 @@ export default function BoothPage() {
             console.error('❌ 동영상 업로드 실패:', videoUploadResult.error);
             showNotification('라이브 포토 업로드 실패 (사진은 저장됨)', 'error');
           }
+        } else {
+          console.warn('⚠️ 녹화된 동영상이 없습니다. 자동 촬영 모드를 사용했는지 확인하세요.');
         }
 
         // QR 코드 생성 (사진 찾기 URL)
