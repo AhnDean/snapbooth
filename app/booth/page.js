@@ -295,11 +295,14 @@ export default function BoothPage() {
 
     // 동영상 녹화 중이면 종료하고 저장
     let videoBlob = null;
+    let currentVideos = [...recordedVideos]; // 현재 동영상 배열 복사
+
     if (isRecording) {
       videoBlob = await stopVideoRecording();
       if (videoBlob) {
-        setRecordedVideos(prev => [...prev, videoBlob]);
-        console.log(`✅ ${fourCutPhotos.length + 1}번째 동영상 저장 완료`);
+        currentVideos = [...currentVideos, videoBlob]; // 로컬 배열에 추가
+        setRecordedVideos(currentVideos); // state 업데이트
+        console.log(`✅ ${fourCutPhotos.length + 1}번째 동영상 저장 완료 (총 ${currentVideos.length}개)`);
       }
     }
 
@@ -314,7 +317,8 @@ export default function BoothPage() {
         setIsAutoMode(false);
 
         showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
-        await create4CutImage(newPhotos);
+        // 로컬 동영상 배열을 직접 전달 (state는 아직 업데이트 안 됐을 수 있음)
+        await create4CutImage(newPhotos, currentVideos);
       } else {
         // 다음 촬영 준비 (1, 2, 3번째 사진 후)
         setTimeout(() => {
@@ -383,7 +387,7 @@ export default function BoothPage() {
   }, []);
 
   // 4컷 이미지 합성
-  const create4CutImage = async (photos) => {
+  const create4CutImage = async (photos, videos = null) => {
     setIsProcessing(true);
 
     try {
@@ -414,14 +418,16 @@ export default function BoothPage() {
         setPhotoCode(uploadResult.code); // 코드를 state에 저장
 
         // 동영상도 함께 업로드 (있는 경우)
-        console.log('📹 녹화된 동영상 개수:', recordedVideos.length);
-        console.log('📹 녹화된 동영상 데이터:', recordedVideos.map(v => ({ size: v.size, type: v.type })));
+        // videos 파라미터가 전달되면 사용, 아니면 state 사용
+        const videosToUpload = videos || recordedVideos;
+        console.log('📹 녹화된 동영상 개수:', videosToUpload.length);
+        console.log('📹 녹화된 동영상 데이터:', videosToUpload.map(v => ({ size: v.size, type: v.type })));
 
-        if (recordedVideos.length > 0) {
-          showNotification(`동영상 업로드 중... (${recordedVideos.length}개)`, 'info');
-          console.log(`🎬 동영상 업로드 시작: ${recordedVideos.length}개`);
+        if (videosToUpload.length > 0) {
+          showNotification(`동영상 업로드 중... (${videosToUpload.length}개)`, 'info');
+          console.log(`🎬 동영상 업로드 시작: ${videosToUpload.length}개`);
 
-          const videoUploadResult = await uploadVideosToCloud(recordedVideos, uploadResult.code);
+          const videoUploadResult = await uploadVideosToCloud(videosToUpload, uploadResult.code);
 
           if (videoUploadResult.success) {
             // DB에 동영상 URL 저장
