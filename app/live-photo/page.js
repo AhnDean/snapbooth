@@ -10,6 +10,7 @@ function LivePhotoContent() {
   const [countdown, setCountdown] = useState(5);
   const [layoutType, setLayoutType] = useState('1x4');
   const [videoUrls, setVideoUrls] = useState([]);
+  const [videoBlobUrls, setVideoBlobUrls] = useState([]); // CORS 우회용 Blob URLs
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const videoRefs = useRef([]);
@@ -40,6 +41,25 @@ function LivePhotoContent() {
         if (result.success && result.photo.video_urls && result.photo.video_urls.length > 0) {
           console.log('✅ 동영상 URL 찾음:', result.photo.video_urls);
           setVideoUrls(result.photo.video_urls);
+
+          // CORS 문제 우회: 비디오를 Blob으로 변환
+          console.log('🔄 비디오를 Blob으로 변환 중...');
+          const blobUrls = await Promise.all(
+            result.photo.video_urls.map(async (url) => {
+              try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                console.log('✅ Blob 생성 완료:', url.substring(url.lastIndexOf('/') + 1));
+                return blobUrl;
+              } catch (error) {
+                console.error('❌ Blob 변환 실패:', error);
+                return url; // 실패시 원본 URL 사용
+              }
+            })
+          );
+          setVideoBlobUrls(blobUrls);
+          console.log('✅ 모든 비디오 Blob 변환 완료');
         } else {
           console.warn('⚠️ 동영상이 없습니다. video_urls:', result.photo?.video_urls);
           setError('라이브 포토가 없습니다.');
@@ -58,7 +78,7 @@ function LivePhotoContent() {
 
   // 카운트다운 후 동영상 재생
   useEffect(() => {
-    if (videoUrls.length > 0 && !loading) {
+    if (videoBlobUrls.length > 0 && !loading) {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -80,7 +100,7 @@ function LivePhotoContent() {
 
       return () => clearInterval(timer);
     }
-  }, [videoUrls, loading]);
+  }, [videoBlobUrls, loading]);
 
   // 라이브 포토 저장 (Web Share API)
   const handleSaveLivePhoto = async () => {
@@ -299,7 +319,7 @@ function LivePhotoContent() {
           maxWidth: '90vw'
         }}
       >
-        {videoUrls.map((videoUrl, index) => (
+        {videoBlobUrls.map((videoBlobUrl, index) => (
           <div
             key={index}
             className="relative bg-gray-900 rounded overflow-hidden"
@@ -313,12 +333,11 @@ function LivePhotoContent() {
             </div>
             <video
               ref={el => videoRefs.current[index] = el}
-              src={videoUrl}
+              src={videoBlobUrl}
               loop
               muted
               playsInline
               preload="auto"
-              crossOrigin="anonymous"
               className="w-full h-full"
               style={{
                 objectFit: layoutType === '2x2' ? 'cover' : 'contain',
