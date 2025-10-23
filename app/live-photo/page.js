@@ -107,25 +107,25 @@ function LivePhotoContent() {
       const ctx = canvas.getContext('2d');
       const videos = videoRefs.current;
 
-      // 캔버스 크기 설정 (4:3 비율 유지)
+      // 캔버스 크기 설정 (3:4 비율 유지 - 4컷 사진과 동일)
       if (layoutType === '2x2') {
         canvas.width = 1200;
-        canvas.height = 1200;
+        canvas.height = 1600; // 3:4 비율
       } else {
         canvas.width = 900;
-        canvas.height = 1200;
+        canvas.height = 1200; // 3:4 비율
       }
 
       // 배경색
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const spacing = 20;
 
       if (layoutType === '2x2') {
-        // 2x2 레이아웃
+        // 2x2 레이아웃 (각 셀도 3:4 비율)
         const cellWidth = (canvas.width - spacing * 3) / 2;
-        const cellHeight = (canvas.height - spacing * 3) / 2;
+        const cellHeight = cellWidth * 4 / 3; // 3:4 비율 유지
 
         for (let i = 0; i < Math.min(4, videos.length); i++) {
           const video = videos[i];
@@ -272,7 +272,7 @@ function LivePhotoContent() {
           return (
             <div
               key={index}
-              className="relative bg-gray-900 rounded overflow-hidden aspect-[4/3]"
+              className="relative bg-gray-900 rounded overflow-hidden aspect-[3/4]"
             >
               <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
                 {index + 1}번째 순간
