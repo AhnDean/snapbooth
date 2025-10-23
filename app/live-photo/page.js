@@ -95,17 +95,34 @@ function LivePhotoContent() {
 
   // 라이브 포토 화면 캡처하여 다운로드/공유
   const handleDownloadComposite = async () => {
-    if (videoUrls.length === 0) return;
+    console.log('🖼️ 라이브 포토 저장 시작...');
+
+    if (videoUrls.length === 0) {
+      console.error('❌ 동영상 URL이 없습니다');
+      alert('동영상이 로드되지 않았습니다.');
+      return;
+    }
 
     try {
-      // 현재 화면의 라이브 포토 그리드 영역을 캡처
-      const gridElement = document.querySelector('.live-photo-grid');
-      if (!gridElement) return;
+      console.log('📹 비디오 개수:', videoUrls.length);
+      console.log('📐 레이아웃 타입:', layoutType);
 
       // html2canvas 대신 간단하게 캔버스 사용
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       const videos = videoRefs.current;
+
+      console.log('🎬 비디오 refs:', videos.filter(v => v).length, '개 로드됨');
+
+      // 모든 비디오가 준비되었는지 확인
+      const readyVideos = videos.filter(v => v && v.readyState >= 2);
+      console.log('✅ 준비된 비디오:', readyVideos.length, '개');
+
+      if (readyVideos.length === 0) {
+        console.error('❌ 준비된 비디오가 없습니다');
+        alert('비디오가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
 
       // 캔버스 크기 설정 (레이아웃에 따라 비율 조정)
       if (layoutType === '2x2') {
@@ -186,37 +203,65 @@ function LivePhotoContent() {
         }
       }
 
+      console.log('🎨 캔버스 생성 완료. 크기:', canvas.width, 'x', canvas.height);
+
       // 캔버스를 Blob으로 변환
       canvas.toBlob(async (blob) => {
+        if (!blob) {
+          console.error('❌ Blob 생성 실패');
+          alert('이미지 생성에 실패했습니다.');
+          return;
+        }
+
+        console.log('📦 Blob 생성 완료. 크기:', Math.round(blob.size / 1024), 'KB');
+
         const filename = `chupbox_live_photo_${Date.now()}.jpg`;
 
         // 모바일 환경에서 Web Share API 지원 확인
-        if (navigator.share) {
+        if (navigator.share && navigator.canShare) {
           try {
             const file = new File([blob], filename, { type: 'image/jpeg' });
 
-            await navigator.share({
+            const shareData = {
               files: [file],
               title: 'CHUPBOX 라이브 포토',
               text: '촬영 전 준비하는 모습을 담은 라이브 포토 🎬'
-            });
-            return;
-          } catch (error) {
-            if (error.name !== 'AbortError') {
-              console.log('공유 실패, 다운로드로 전환:', error);
+            };
+
+            if (navigator.canShare(shareData)) {
+              console.log('📤 Web Share API 사용 가능, 공유 시작...');
+              await navigator.share(shareData);
+              console.log('✅ 공유 완료');
+              return;
             } else {
+              console.log('⚠️ canShare false, 다운로드로 전환');
+            }
+          } catch (error) {
+            if (error.name === 'AbortError') {
+              console.log('❌ 사용자가 공유 취소');
               return; // 사용자가 취소한 경우
             }
+            console.log('⚠️ 공유 실패, 다운로드로 전환:', error);
           }
+        } else {
+          console.log('ℹ️ Web Share API 지원하지 않음, 다운로드 시작');
         }
 
         // Web Share API를 지원하지 않거나 실패한 경우 다운로드
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
+        try {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          console.log('✅ 다운로드 완료');
+        } catch (downloadError) {
+          console.error('❌ 다운로드 실패:', downloadError);
+          alert('다운로드에 실패했습니다.');
+        }
       }, 'image/jpeg', 0.95);
     } catch (error) {
       console.error('라이브 포토 저장 실패:', error);
@@ -274,7 +319,7 @@ function LivePhotoContent() {
             <div
               key={index}
               className={`relative bg-gray-900 rounded overflow-hidden ${
-                layoutType === '2x2' ? 'aspect-square' : ''
+                layoutType === '2x2' ? 'aspect-square' : 'aspect-[3/4]'
               }`}
             >
               <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
