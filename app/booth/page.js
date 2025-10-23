@@ -387,21 +387,21 @@ export default function BoothPage() {
     <div className="min-h-screen bg-[#fef5e7]">
       {/* 헤더 */}
       <header className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-20">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <h1 className="text-xl sm:text-3xl font-bold">
                 <span style={{ color: '#ee5253' }}>CHUP</span>
                 <span style={{ color: '#f7d945' }}>BOX</span>
               </h1>
-              <p className="text-sm text-gray-500 ml-2">Capture Memories</p>
+              <p className="hidden sm:block text-sm text-gray-500 ml-2">Capture Memories</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* 홈으로 돌아가기 */}
               <Link
                 href="/"
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:text-gray-800 transition-colors"
               >
                 홈으로
               </Link>
@@ -411,39 +411,39 @@ export default function BoothPage() {
       </header>
 
       {/* 메인 컨텐츠 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid gap-8 lg:grid-cols-3">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="grid gap-4 sm:gap-8 lg:grid-cols-3">
 
           {/* 카메라 영역 */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-3 sm:p-6">
 
               {/* 설정 영역 */}
-              <div className="mb-6 grid grid-cols-3 gap-4">
+              <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   {/* 레이아웃 선택 */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
                       레이아웃
                     </label>
                     <select
                       value={layoutType}
                       onChange={(e) => setLayoutType(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-gray-700 font-medium"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base text-gray-700 font-medium"
                     >
-                      <option value="1x4">1×4 (세로 일렬)</option>
-                      <option value="2x2">2×2 (정사각형)</option>
+                      <option value="1x4">1×4 (세로)</option>
+                      <option value="2x2">2×2 (정사각)</option>
                     </select>
                   </div>
 
                   {/* 촬영 대기시간 선택 */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      촬영 대기시간
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
+                      대기시간
                     </label>
                     <select
                       value={countdownDuration}
                       onChange={(e) => setCountdownDuration(Number(e.target.value))}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-gray-700 font-medium"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base text-gray-700 font-medium"
                     >
                       <option value={3}>3초</option>
                       <option value={5}>5초</option>
@@ -453,15 +453,15 @@ export default function BoothPage() {
 
                   {/* 프레임 선택 버튼 */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      프레임 선택
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
+                      프레임
                     </label>
                     <button
                       onClick={() => setShowFrameModal(true)}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 hover:border-blue-500 focus:border-blue-500 focus:outline-none transition-colors text-gray-700 font-medium bg-white hover:bg-gray-50 flex items-center justify-between"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-300 hover:border-blue-500 focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base text-gray-700 font-medium bg-white hover:bg-gray-50 flex items-center justify-between"
                     >
-                      <span>{selectedFrame ? selectedFrame.name : '프레임 없음'}</span>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span className="truncate">{selectedFrame ? selectedFrame.name : '없음'}</span>
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </button>
@@ -469,7 +469,7 @@ export default function BoothPage() {
                 </div>
 
               {/* 4컷 모드 컨트롤 버튼들 */}
-              <div className="mb-6 flex gap-4 items-center">
+              <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 sm:gap-4 items-center">
                 {/* 자동 촬영 버튼 */}
                 {!isAutoMode && fourCutPhotos.length === 0 && (
                   <button
@@ -478,7 +478,7 @@ export default function BoothPage() {
                       setCountdown(countdownDuration);
                       showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
                     }}
-                    className="px-8 py-4 rounded-2xl font-bold text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+                    className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
                     ⏱️ 자동 촬영
                   </button>
@@ -488,20 +488,20 @@ export default function BoothPage() {
                 {isAutoMode && fourCutPhotos.length < 4 && (
                   <button
                     onClick={cancelAutoMode}
-                    className="px-8 py-4 rounded-2xl font-bold text-lg bg-red-500 hover:bg-red-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+                    className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-red-500 hover:bg-red-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    ✕ 자동 촬영 취소
+                    ✕ 취소
                   </button>
                 )}
 
                 {/* 촬영 진행 상태 및 옵션 */}
                 {(
-                  <div className="flex items-center gap-4">
-                    <div className="px-4 py-2 rounded-full font-bold text-white shadow-md" style={{ backgroundColor: '#ee5253' }}>
-                      {fourCutPhotos.length}/4 촬영 완료
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold text-sm sm:text-base text-white shadow-md" style={{ backgroundColor: '#ee5253' }}>
+                      {fourCutPhotos.length}/4 완료
                     </div>
                     {/* 배경 색상 선택 */}
-                    <div className="flex gap-2 bg-white px-4 py-2 rounded-full shadow-md">
+                    <div className="flex gap-1.5 sm:gap-2 bg-white px-2 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-md">
                       {[
                         { color: '#000000', label: '블랙' },
                         { color: '#ee5253', label: '레드' },
@@ -512,8 +512,8 @@ export default function BoothPage() {
                           key={color}
                           onClick={() => setBackgroundColor(color)}
                           className={`
-                            w-10 h-10 rounded-full border-3 transition-all hover:scale-110
-                            ${backgroundColor === color ? 'ring-4 ring-offset-2' : 'border-2 border-gray-300'}
+                            w-8 h-8 sm:w-10 sm:h-10 rounded-full border-3 transition-all hover:scale-110
+                            ${backgroundColor === color ? 'ring-2 sm:ring-4 ring-offset-1 sm:ring-offset-2' : 'border-2 border-gray-300'}
                           `}
                           style={{
                             backgroundColor: color,
@@ -625,9 +625,9 @@ export default function BoothPage() {
 
           {/* 촬영 모니터링 영역 */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-8">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">
-                {processedPhoto && fourCutPhotos.length === 4 ? '📸 완성된 사진' : '📸 촬영 현황'}
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 lg:sticky lg:top-8">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
+                {processedPhoto && fourCutPhotos.length === 4 ? '📸 완성' : '📸 촬영'}
               </h3>
 
               {/* 촬영 완료 - 완성된 4컷 이미지 표시 */}
@@ -641,11 +641,11 @@ export default function BoothPage() {
 
                   {/* 사진 코드 표시 */}
                   {photoCode && (
-                    <div className="bg-green-50 border-2 border-green-500 rounded-xl p-4 text-center">
-                      <p className="text-sm text-gray-600 mb-1">📸 사진 코드</p>
-                      <p className="text-3xl font-bold text-green-600 tracking-widest">{photoCode}</p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        이 코드로 30일 동안 사진을 찾을 수 있습니다
+                    <div className="bg-green-50 border-2 border-green-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-1">📸 사진 코드</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-green-600 tracking-widest break-all">{photoCode}</p>
+                      <p className="text-xs text-gray-500 mt-1 sm:mt-2">
+                        30일 동안 사진 찾기 가능
                       </p>
                     </div>
                   )}
@@ -654,31 +654,31 @@ export default function BoothPage() {
                     {/* 사진 인쇄 버튼 */}
                     <button
                       onClick={handlePrint}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-md"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-md"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                       </svg>
-                      사진 인쇄
+                      <span className="hidden sm:inline">사진 </span>인쇄
                     </button>
 
                     {/* 갤러리에 저장 버튼 */}
                     <button
                       onClick={handleDownload}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-all duration-300 transform hover:scale-105 shadow-md"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base bg-yellow-400 hover:bg-yellow-500 text-gray-900 transition-all duration-300 transform hover:scale-105 shadow-md"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      갤러리에 저장
+                      <span className="hidden sm:inline">갤러리에 </span>저장
                     </button>
 
                     {/* 다시 촬영 버튼 */}
                     <button
                       onClick={handleRetake}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold bg-gray-500 hover:bg-gray-600 text-white transition-all duration-300 transform hover:scale-105 shadow-md"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base bg-gray-500 hover:bg-gray-600 text-white transition-all duration-300 transform hover:scale-105 shadow-md"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                       다시 촬영
@@ -940,9 +940,9 @@ export default function BoothPage() {
 
       {/* 알림 토스트 */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+        <div className="fixed top-2 left-2 right-2 sm:top-4 sm:right-4 sm:left-auto z-50 animate-in slide-in-from-top-2 duration-300">
           <div className={`
-            px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 min-w-80
+            px-4 py-3 sm:px-6 sm:py-4 rounded-lg sm:rounded-xl shadow-lg flex items-center gap-2 sm:gap-3 max-w-full sm:min-w-80
             ${notification.type === 'success'
               ? 'bg-green-500 text-white'
               : notification.type === 'error'
@@ -950,18 +950,18 @@ export default function BoothPage() {
               : 'bg-blue-500 text-white'
             }
           `}>
-            <div className="text-xl">
+            <div className="text-lg sm:text-xl flex-shrink-0">
               {notification.type === 'success' ? '✅'
                : notification.type === 'error' ? '❌'
                : 'ℹ️'}
             </div>
-            <p className="font-medium">{notification.message}</p>
+            <p className="font-medium text-sm sm:text-base flex-1 break-words">{notification.message}</p>
 
             <button
               onClick={() => setNotification(null)}
-              className="ml-auto text-white hover:text-gray-200 transition-colors"
+              className="ml-auto flex-shrink-0 text-white hover:text-gray-200 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
