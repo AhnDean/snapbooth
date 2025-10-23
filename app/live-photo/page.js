@@ -2,35 +2,55 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { findPhotoByCode } from '../../src/utils/photoUpload';
 
 function LivePhotoContent() {
   const searchParams = useSearchParams();
   const [showVideos, setShowVideos] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [layoutType, setLayoutType] = useState('1x4');
-  const [videoBlobs, setVideoBlobs] = useState([]);
+  const [videoUrls, setVideoUrls] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const videoRefs = useRef([]);
   const canvasRef = useRef(null);
 
-  // URL에서 동영상 데이터 로드
+  // URL에서 사진 코드로 동영상 데이터 로드
   useEffect(() => {
-    const layout = searchParams.get('layout') || '1x4';
-    setLayoutType(layout);
+    const loadVideos = async () => {
+      try {
+        const code = searchParams.get('code');
+        const layout = searchParams.get('layout') || '1x4';
+        setLayoutType(layout);
 
-    // sessionStorage에서 동영상 Blob 가져오기
-    const storedVideos = sessionStorage.getItem('livePhotoVideos');
-    if (storedVideos) {
-      const videoUrls = JSON.parse(storedVideos);
-      // Data URL을 Blob으로 변환
-      Promise.all(
-        videoUrls.map(async (dataUrl) => {
-          const response = await fetch(dataUrl);
-          return await response.blob();
-        })
-      ).then(blobs => {
-        setVideoBlobs(blobs);
-      });
-    }
+        if (!code) {
+          setError('사진 코드가 없습니다.');
+          setLoading(false);
+          return;
+        }
+
+        console.log('🔍 사진 코드로 동영상 찾기:', code);
+
+        // Supabase에서 사진 데이터 가져오기
+        const result = await findPhotoByCode(code);
+
+        if (result.success && result.photo.video_urls) {
+          console.log('✅ 동영상 URL 찾음:', result.photo.video_urls);
+          setVideoUrls(result.photo.video_urls);
+        } else {
+          console.warn('⚠️ 동영상이 없습니다');
+          setError('라이브 포토가 없습니다.');
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('❌ 동영상 로드 실패:', err);
+        setError('동영상을 불러올 수 없습니다.');
+        setLoading(false);
+      }
+    };
+
+    loadVideos();
   }, [searchParams]);
 
   // 카운트다운
@@ -154,10 +174,27 @@ function LivePhotoContent() {
     });
   };
 
-  if (videoBlobs.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <p className="text-white">라이브 포토를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (error || videoUrls.length === 0) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😢</div>
+          <p className="text-white text-xl mb-4">{error || '라이브 포토가 없습니다'}</p>
+          <button
+            onClick={() => window.close()}
+            className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition-all"
+          >
+            닫기
+          </button>
+        </div>
       </div>
     );
   }
@@ -182,8 +219,7 @@ function LivePhotoContent() {
       <div className={`grid ${getGridStyle()} gap-2 bg-black p-4 rounded-xl w-full ${
         layoutType === '2x2' ? 'max-w-md' : 'max-w-sm'
       }`}>
-        {videoBlobs.map((blob, index) => {
-          const videoUrl = URL.createObjectURL(blob);
+        {videoUrls.map((videoUrl, index) => {
           return (
             <div
               key={index}

@@ -7,7 +7,7 @@ import Camera from '../../src/components/Camera';
 import FrameGallery from '../../src/components/FrameGallery';
 import { applyFrame, downloadImage, generateFilename, create4CutLayout } from '../../src/utils/imageProcessing';
 import { FRAMES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../src/utils/constants';
-import { uploadPhotoToCloud } from '../../src/utils/photoUpload';
+import { uploadPhotoToCloud, uploadVideosToCloud, saveVideoUrls } from '../../src/utils/photoUpload';
 import videoRecorder from '../../src/utils/videoRecorder';
 
 // Force dynamic rendering to avoid build-time errors with environment variables
@@ -413,6 +413,30 @@ export default function BoothPage() {
       if (uploadResult.success) {
         setPhotoCode(uploadResult.code); // 코드를 state에 저장
 
+        // 동영상도 함께 업로드 (있는 경우)
+        if (recordedVideos.length > 0) {
+          showNotification(`동영상 업로드 중... (${recordedVideos.length}개)`, 'info');
+          console.log(`🎬 동영상 업로드 시작: ${recordedVideos.length}개`);
+
+          const videoUploadResult = await uploadVideosToCloud(recordedVideos, uploadResult.code);
+
+          if (videoUploadResult.success) {
+            // DB에 동영상 URL 저장
+            const saveResult = await saveVideoUrls(uploadResult.code, videoUploadResult.videoUrls);
+
+            if (saveResult.success) {
+              console.log('✅ 동영상 업로드 및 DB 저장 완료');
+              showNotification('사진과 라이브 포토가 모두 저장되었습니다!', 'success');
+            } else {
+              console.error('❌ 동영상 URL DB 저장 실패:', saveResult.error);
+              showNotification('라이브 포토 저장 실패', 'error');
+            }
+          } else {
+            console.error('❌ 동영상 업로드 실패:', videoUploadResult.error);
+            showNotification('라이브 포토 업로드 실패 (사진은 저장됨)', 'error');
+          }
+        }
+
         // QR 코드 생성 (사진 찾기 URL)
         const findUrl = `${window.location.origin}/find?code=${uploadResult.code}`;
         const qrDataUrl = await QRCode.toDataURL(findUrl, {
@@ -766,61 +790,13 @@ export default function BoothPage() {
 
                       {/* 라이브 포토 보기 버튼 */}
                       <button
-                        onClick={async () => {
-                          try {
-                            console.log('🎥 라이브 포토 버튼 클릭됨');
-                            console.log('📹 녹화된 비디오 개수:', recordedVideos.length);
-
-                            // Safari 팝업 차단 방지: async 작업 전에 새 탭을 먼저 열기
-                            const newWindow = window.open('about:blank', '_blank');
-                            if (!newWindow) {
-                              alert('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
-                              return;
-                            }
-
-                            // 동영상을 Data URL로 변환
-                            console.log('🔄 비디오를 Data URL로 변환 중...');
-                            const videoDataUrls = await Promise.all(
-                              recordedVideos.map(async (blob, index) => {
-                                console.log(`  - 비디오 ${index + 1} 변환 중... (크기: ${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
-                                return await new Promise((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    console.log(`  ✅ 비디오 ${index + 1} 변환 완료`);
-                                    resolve(reader.result);
-                                  };
-                                  reader.onerror = (error) => {
-                                    console.error(`  ❌ 비디오 ${index + 1} 변환 실패:`, error);
-                                    reject(error);
-                                  };
-                                  reader.readAsDataURL(blob);
-                                });
-                              })
-                            );
-
-                            // sessionStorage에 저장
-                            console.log('💾 sessionStorage에 저장 중...');
-                            const dataString = JSON.stringify(videoDataUrls);
-                            console.log(`📊 데이터 크기: ${(dataString.length / 1024 / 1024).toFixed(2)}MB`);
-
-                            try {
-                              sessionStorage.setItem('livePhotoVideos', dataString);
-                              console.log('✅ sessionStorage 저장 완료');
-                            } catch (storageError) {
-                              console.error('❌ sessionStorage 저장 실패:', storageError);
-                              newWindow.close();
-                              alert('비디오 데이터가 너무 커서 저장할 수 없습니다. 다시 시도해주세요.');
-                              return;
-                            }
-
-                            // 새 탭에 URL 설정
-                            const livePhotoUrl = `${window.location.origin}/live-photo?layout=${layoutType}`;
-                            console.log('🔗 새 탭 열기:', livePhotoUrl);
-                            newWindow.location.href = livePhotoUrl;
-                            console.log('✅ 라이브 포토 페이지 열림');
-                          } catch (error) {
-                            console.error('💥 라이브 포토 오류:', error);
-                            alert('라이브 포토를 열 수 없습니다: ' + error.message);
+                        onClick={() => {
+                          // photoCode로 라이브 포토 페이지 열기
+                          if (photoCode) {
+                            const livePhotoUrl = `/live-photo?code=${photoCode}&layout=${layoutType}`;
+                            window.open(livePhotoUrl, '_blank');
+                          } else {
+                            alert('사진 코드가 없습니다. 사진을 먼저 저장해주세요.');
                           }
                         }}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all shadow-lg mb-2"

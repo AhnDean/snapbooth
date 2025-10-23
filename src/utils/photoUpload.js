@@ -149,3 +149,100 @@ export function getPhotoUrl(code) {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   return `${baseUrl}/find?code=${code}`;
 }
+
+/**
+ * 동영상을 Supabase Storage에 업로드
+ * @param {Blob[]} videoBlobs - 동영상 Blob 배열 (최대 4개)
+ * @param {string} photoCode - 연결된 사진의 코드
+ * @returns {Promise<Object>} - { success, videoUrls, error }
+ */
+export async function uploadVideosToCloud(videoBlobs, photoCode) {
+  try {
+    console.log(`🎥 동영상 업로드 시작: ${videoBlobs.length}개`);
+
+    const videoUrls = [];
+
+    // 각 동영상을 순차적으로 업로드
+    for (let i = 0; i < videoBlobs.length; i++) {
+      const blob = videoBlobs[i];
+
+      console.log(`  📹 동영상 ${i + 1}/${videoBlobs.length} 업로드 중... (크기: ${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+
+      // 파일명 생성 (타임스탬프 + 코드 + 인덱스)
+      const timestamp = Date.now();
+      const fileName = `${photoCode}_${timestamp}_${i + 1}.webm`;
+      const filePath = `videos/${fileName}`;
+
+      // Supabase Storage에 업로드
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(filePath, blob, {
+          contentType: 'video/webm',
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error(`  ❌ 동영상 ${i + 1} 업로드 실패:`, uploadError);
+        throw uploadError;
+      }
+
+      // Public URL 생성
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filePath);
+
+      videoUrls.push(publicUrl);
+      console.log(`  ✅ 동영상 ${i + 1} 업로드 완료`);
+    }
+
+    console.log(`✅ 모든 동영상 업로드 완료: ${videoUrls.length}개`);
+
+    return {
+      success: true,
+      videoUrls
+    };
+
+  } catch (error) {
+    console.error('💥 동영상 업로드 오류:', error);
+    return {
+      success: false,
+      error: error.message || '동영상 업로드에 실패했습니다'
+    };
+  }
+}
+
+/**
+ * DB에 동영상 URL 저장 (사진 레코드 업데이트)
+ * @param {string} photoCode - 사진 코드
+ * @param {string[]} videoUrls - 동영상 URL 배열
+ * @returns {Promise<Object>} - { success, error }
+ */
+export async function saveVideoUrls(photoCode, videoUrls) {
+  try {
+    console.log(`💾 동영상 URL DB 저장 중... (코드: ${photoCode})`);
+
+    const { error } = await supabase
+      .from('photos')
+      .update({ video_urls: videoUrls })
+      .eq('code', photoCode.toUpperCase());
+
+    if (error) {
+      console.error('❌ DB 저장 실패:', error);
+      throw error;
+    }
+
+    console.log('✅ 동영상 URL DB 저장 완료');
+
+    return {
+      success: true
+    };
+
+  } catch (error) {
+    console.error('💥 DB 저장 오류:', error);
+    return {
+      success: false,
+      error: error.message || 'DB 저장에 실패했습니다'
+    };
+  }
+}

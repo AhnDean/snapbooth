@@ -183,6 +183,20 @@ function FindPhotoContent() {
                 </div>
               </div>
 
+              {/* 라이브 포토 버튼 (있는 경우에만 표시) */}
+              {photo.video_urls && photo.video_urls.length > 0 && (
+                <button
+                  onClick={() => {
+                    // 레이아웃 정보가 없으므로 기본값 사용 (1x4)
+                    const livePhotoUrl = `/live-photo?code=${photo.code}&layout=1x4`;
+                    window.open(livePhotoUrl, '_blank');
+                  }}
+                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-base sm:text-lg rounded-lg sm:rounded-xl transition-all shadow-lg hover:shadow-xl"
+                >
+                  🎥 라이브 포토 보기
+                </button>
+              )}
+
               {/* 다운로드 버튼 */}
               <button
                 onClick={handleDownload}
