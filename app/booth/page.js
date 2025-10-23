@@ -44,6 +44,8 @@ export default function BoothPage() {
 
   // QR 코드 상태
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
+  const [livePhotoQrCodeUrl, setLivePhotoQrCodeUrl] = useState(null);
+  const [hasLivePhoto, setHasLivePhoto] = useState(false);
 
   // 사진 촬영 핸들러
   const handlePhotoCapture = async (photoDataUrl) => {
@@ -448,17 +450,32 @@ export default function BoothPage() {
           console.warn('⚠️ 녹화된 동영상이 없습니다. 자동 촬영 모드를 사용했는지 확인하세요.');
         }
 
-        // QR 코드 생성 (사진 찾기 URL)
+        // QR 코드 생성 (사진 찾기 URL) - 핑크/보라 배경
         const findUrl = `${window.location.origin}/find?code=${uploadResult.code}`;
         const qrDataUrl = await QRCode.toDataURL(findUrl, {
           width: 200,
           margin: 2,
           color: {
             dark: '#000000',
-            light: '#FFFFFF'
+            light: '#FDF2F8' // 핑크 배경
           }
         });
         setQrCodeUrl(qrDataUrl);
+
+        // 라이브 포토 QR 코드 생성 (동영상이 있을 때만) - 보라/파랑 배경
+        if (videosToUpload && videosToUpload.length > 0) {
+          const livePhotoUrl = `${window.location.origin}/live-photo?code=${uploadResult.code}&layout=${layoutType}`;
+          const liveQrDataUrl = await QRCode.toDataURL(livePhotoUrl, {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#EDE9FE' // 보라 배경
+            }
+          });
+          setLivePhotoQrCodeUrl(liveQrDataUrl);
+          setHasLivePhoto(true);
+        }
 
         showNotification(`✅ 저장 완료! QR 코드로 사진을 찾을 수 있습니다`, 'success');
         console.log('📸 사진 코드:', uploadResult.code);
@@ -777,18 +794,38 @@ export default function BoothPage() {
 
                   {/* QR 코드 표시 */}
                   {qrCodeUrl && (
-                    <div className="bg-green-50 border-2 border-green-500 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
-                      <p className="text-xs sm:text-sm text-gray-600 mb-3 font-semibold">📱 사진 찾기 QR 코드</p>
-                      <div className="flex justify-center mb-3">
-                        <img
-                          src={qrCodeUrl}
-                          alt="QR Code"
-                          className="w-40 h-40 border-4 border-white rounded-lg shadow"
-                        />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      {/* 사진 QR 코드 - 핑크 배경 */}
+                      <div className="bg-pink-50 border-2 border-pink-400 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                        <p className="text-xs sm:text-sm text-gray-700 mb-2 font-bold">📸 사진 보기</p>
+                        <div className="flex justify-center mb-2">
+                          <img
+                            src={qrCodeUrl}
+                            alt="Photo QR Code"
+                            className="w-32 h-32 sm:w-36 sm:h-36 border-4 border-white rounded-lg shadow-lg"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          사진 다운로드
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        QR 코드를 스캔하면 30일 동안 사진을 찾을 수 있습니다
-                      </p>
+
+                      {/* 라이브 포토 QR 코드 - 보라 배경 (동영상이 있을 때만) */}
+                      {livePhotoQrCodeUrl && hasLivePhoto && (
+                        <div className="bg-purple-50 border-2 border-purple-400 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                          <p className="text-xs sm:text-sm text-gray-700 mb-2 font-bold">🎥 라이브 포토</p>
+                          <div className="flex justify-center mb-2">
+                            <img
+                              src={livePhotoQrCodeUrl}
+                              alt="Live Photo QR Code"
+                              className="w-32 h-32 sm:w-36 sm:h-36 border-4 border-white rounded-lg shadow-lg"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            동영상 재생
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

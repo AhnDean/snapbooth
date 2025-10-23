@@ -93,87 +93,134 @@ function LivePhotoContent() {
     return 'grid-cols-1 grid-rows-4 aspect-[3/4]';
   };
 
-  // 동영상을 캔버스에 합성하여 다운로드/공유
+  // 라이브 포토 화면 캡처하여 다운로드/공유
   const handleDownloadComposite = async () => {
-    if (!canvasRef.current || videoUrls.length === 0) return;
+    if (videoUrls.length === 0) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    try {
+      // 현재 화면의 라이브 포토 그리드 영역을 캡처
+      const gridElement = document.querySelector('.live-photo-grid');
+      if (!gridElement) return;
 
-    // 캔버스 크기 설정
-    if (layoutType === '2x2') {
-      canvas.width = 1024;
-      canvas.height = 1024;
-    } else {
-      canvas.width = 600;
-      canvas.height = 1800;
-    }
+      // html2canvas 대신 간단하게 캔버스 사용
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      const videos = videoRefs.current;
 
-    // 배경색
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 캔버스 크기 설정 (4:3 비율 유지)
+      if (layoutType === '2x2') {
+        canvas.width = 1200;
+        canvas.height = 1200;
+      } else {
+        canvas.width = 900;
+        canvas.height = 1200;
+      }
 
-    // 각 동영상의 첫 프레임을 캔버스에 그리기
-    const videos = videoRefs.current;
-    const spacing = 10;
+      // 배경색
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (layoutType === '2x2') {
-      // 2x2 레이아웃
-      const cellWidth = (canvas.width - spacing * 3) / 2;
-      const cellHeight = (canvas.height - spacing * 3) / 2;
+      const spacing = 20;
 
-      for (let i = 0; i < Math.min(4, videos.length); i++) {
-        const video = videos[i];
-        if (video) {
-          const x = (i % 2) * (cellWidth + spacing) + spacing;
-          const y = Math.floor(i / 2) * (cellHeight + spacing) + spacing;
-          ctx.drawImage(video, x, y, cellWidth, cellHeight);
+      if (layoutType === '2x2') {
+        // 2x2 레이아웃
+        const cellWidth = (canvas.width - spacing * 3) / 2;
+        const cellHeight = (canvas.height - spacing * 3) / 2;
+
+        for (let i = 0; i < Math.min(4, videos.length); i++) {
+          const video = videos[i];
+          if (video && video.readyState >= 2) {
+            const x = (i % 2) * (cellWidth + spacing) + spacing;
+            const y = Math.floor(i / 2) * (cellHeight + spacing) + spacing;
+
+            // 비디오의 실제 비율 계산
+            const videoAspect = video.videoWidth / video.videoHeight;
+            const cellAspect = cellWidth / cellHeight;
+
+            let drawWidth = cellWidth;
+            let drawHeight = cellHeight;
+            let drawX = x;
+            let drawY = y;
+
+            if (videoAspect > cellAspect) {
+              drawHeight = cellWidth / videoAspect;
+              drawY = y + (cellHeight - drawHeight) / 2;
+            } else {
+              drawWidth = cellHeight * videoAspect;
+              drawX = x + (cellWidth - drawWidth) / 2;
+            }
+
+            ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+          }
+        }
+      } else {
+        // 1x4 레이아웃
+        const cellWidth = canvas.width - spacing * 2;
+        const cellHeight = (canvas.height - spacing * 5) / 4;
+
+        for (let i = 0; i < Math.min(4, videos.length); i++) {
+          const video = videos[i];
+          if (video && video.readyState >= 2) {
+            const y = i * (cellHeight + spacing) + spacing;
+
+            // 비디오의 실제 비율 계산
+            const videoAspect = video.videoWidth / video.videoHeight;
+            const cellAspect = cellWidth / cellHeight;
+
+            let drawWidth = cellWidth;
+            let drawHeight = cellHeight;
+            let drawX = spacing;
+            let drawY = y;
+
+            if (videoAspect > cellAspect) {
+              drawHeight = cellWidth / videoAspect;
+              drawY = y + (cellHeight - drawHeight) / 2;
+            } else {
+              drawWidth = cellHeight * videoAspect;
+              drawX = spacing + (cellWidth - drawWidth) / 2;
+            }
+
+            ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+          }
         }
       }
-    } else {
-      // 1x4 레이아웃
-      const cellWidth = canvas.width - spacing * 2;
-      const cellHeight = (canvas.height - spacing * 5) / 4;
 
-      for (let i = 0; i < Math.min(4, videos.length); i++) {
-        const video = videos[i];
-        if (video) {
-          const y = i * (cellHeight + spacing) + spacing;
-          ctx.drawImage(video, spacing, y, cellWidth, cellHeight);
-        }
-      }
-    }
+      // 캔버스를 Blob으로 변환
+      canvas.toBlob(async (blob) => {
+        const filename = `chupbox_live_photo_${Date.now()}.jpg`;
 
-    // 캔버스를 Blob으로 변환
-    canvas.toBlob(async (blob) => {
-      const filename = `chupbox_live_photo_${Date.now()}.png`;
+        // 모바일 환경에서 Web Share API 지원 확인
+        if (navigator.share) {
+          try {
+            const file = new File([blob], filename, { type: 'image/jpeg' });
 
-      // 모바일 환경에서 Web Share API 지원 확인
-      if (navigator.share && navigator.canShare) {
-        try {
-          const file = new File([blob], filename, { type: 'image/png' });
-
-          if (navigator.canShare({ files: [file] })) {
             await navigator.share({
               files: [file],
               title: 'CHUPBOX 라이브 포토',
-              text: '촬영 전 준비하는 모습을 담은 라이브 포토'
+              text: '촬영 전 준비하는 모습을 담은 라이브 포토 🎬'
             });
             return;
+          } catch (error) {
+            if (error.name !== 'AbortError') {
+              console.log('공유 실패, 다운로드로 전환:', error);
+            } else {
+              return; // 사용자가 취소한 경우
+            }
           }
-        } catch (error) {
-          console.log('공유 취소 또는 실패:', error);
         }
-      }
 
-      // Web Share API를 지원하지 않거나 실패한 경우 다운로드
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+        // Web Share API를 지원하지 않거나 실패한 경우 다운로드
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }, 'image/jpeg', 0.95);
+    } catch (error) {
+      console.error('라이브 포토 저장 실패:', error);
+      alert('라이브 포토 저장에 실패했습니다.');
+    }
   };
 
   if (loading) {
@@ -225,7 +272,7 @@ function LivePhotoContent() {
           return (
             <div
               key={index}
-              className="relative bg-gray-900 rounded overflow-hidden"
+              className="relative bg-gray-900 rounded overflow-hidden aspect-[4/3]"
             >
               <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
                 {index + 1}번째 순간
@@ -236,7 +283,7 @@ function LivePhotoContent() {
                 loop
                 muted
                 playsInline
-                className={`w-full h-full object-cover transition-opacity duration-500 ${
+                className={`w-full h-full object-contain transition-opacity duration-500 ${
                   showVideos ? 'opacity-100' : 'opacity-30'
                 }`}
               />
