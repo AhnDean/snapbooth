@@ -114,6 +114,13 @@ function LivePhotoContent() {
 
       console.log('🎬 비디오 refs:', videos.filter(v => v).length, '개 로드됨');
 
+      // 각 비디오의 상태 로깅
+      videos.forEach((v, i) => {
+        if (v) {
+          console.log(`비디오 ${i+1}: readyState=${v.readyState}, width=${v.videoWidth}, height=${v.videoHeight}`);
+        }
+      });
+
       // 모든 비디오가 준비되었는지 확인
       const readyVideos = videos.filter(v => v && v.readyState >= 2);
       console.log('✅ 준비된 비디오:', readyVideos.length, '개');
@@ -122,6 +129,11 @@ function LivePhotoContent() {
         console.error('❌ 준비된 비디오가 없습니다');
         alert('비디오가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
         return;
+      }
+
+      if (readyVideos.length < 4) {
+        console.warn(`⚠️ ${4 - readyVideos.length}개의 비디오가 아직 준비되지 않았습니다`);
+        // 계속 진행하되 경고만 표시
       }
 
       // 캔버스 크기 설정 (레이아웃에 따라 비율 조정)
@@ -312,7 +324,7 @@ function LivePhotoContent() {
 
       {/* 동영상 그리드 - 4컷 사진과 동일한 비율 */}
       <div className={`grid ${getGridStyle()} gap-5 bg-white p-10 rounded-xl ${
-        layoutType === '2x2' ? 'w-full max-w-2xl' : 'w-full max-w-md'
+        layoutType === '2x2' ? 'w-full max-w-2xl' : 'w-[90vw] max-w-[500px]'
       }`}>
         {videoUrls.map((videoUrl, index) => {
           return (
