@@ -107,13 +107,13 @@ function LivePhotoContent() {
       const ctx = canvas.getContext('2d');
       const videos = videoRefs.current;
 
-      // 캔버스 크기 설정 (3:4 비율 유지 - 4컷 사진과 동일)
+      // 캔버스 크기 설정 (레이아웃에 따라 비율 조정)
       if (layoutType === '2x2') {
         canvas.width = 1200;
-        canvas.height = 1600; // 3:4 비율
+        canvas.height = 1200; // 정사각형
       } else {
         canvas.width = 900;
-        canvas.height = 1200; // 3:4 비율
+        canvas.height = 1200; // 원본 비율 유지
       }
 
       // 배경색
@@ -121,17 +121,18 @@ function LivePhotoContent() {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const spacing = 20;
+      const padding = 40;
 
       if (layoutType === '2x2') {
-        // 2x2 레이아웃 (각 셀도 3:4 비율)
-        const cellWidth = (canvas.width - spacing * 3) / 2;
-        const cellHeight = cellWidth * 4 / 3; // 3:4 비율 유지
+        // 2x2 레이아웃 (각 셀은 정사각형)
+        const cellWidth = (canvas.width - padding * 2 - spacing) / 2;
+        const cellHeight = cellWidth; // 정사각형
 
         for (let i = 0; i < Math.min(4, videos.length); i++) {
           const video = videos[i];
           if (video && video.readyState >= 2) {
-            const x = (i % 2) * (cellWidth + spacing) + spacing;
-            const y = Math.floor(i / 2) * (cellHeight + spacing) + spacing;
+            const x = (i % 2) * (cellWidth + spacing) + padding;
+            const y = Math.floor(i / 2) * (cellHeight + spacing) + padding;
 
             // 비디오의 실제 비율 계산
             const videoAspect = video.videoWidth / video.videoHeight;
@@ -155,13 +156,13 @@ function LivePhotoContent() {
         }
       } else {
         // 1x4 레이아웃
-        const cellWidth = canvas.width - spacing * 2;
-        const cellHeight = (canvas.height - spacing * 5) / 4;
+        const cellWidth = canvas.width - padding * 2;
+        const cellHeight = (canvas.height - padding * 2 - spacing * 3) / 4;
 
         for (let i = 0; i < Math.min(4, videos.length); i++) {
           const video = videos[i];
           if (video && video.readyState >= 2) {
-            const y = i * (cellHeight + spacing) + spacing;
+            const y = i * (cellHeight + spacing) + padding;
 
             // 비디오의 실제 비율 계산
             const videoAspect = video.videoWidth / video.videoHeight;
@@ -169,7 +170,7 @@ function LivePhotoContent() {
 
             let drawWidth = cellWidth;
             let drawHeight = cellHeight;
-            let drawX = spacing;
+            let drawX = padding;
             let drawY = y;
 
             if (videoAspect > cellAspect) {
@@ -272,7 +273,9 @@ function LivePhotoContent() {
           return (
             <div
               key={index}
-              className="relative bg-gray-900 rounded overflow-hidden aspect-[3/4]"
+              className={`relative bg-gray-900 rounded overflow-hidden ${
+                layoutType === '2x2' ? 'aspect-square' : ''
+              }`}
             >
               <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
                 {index + 1}번째 순간
