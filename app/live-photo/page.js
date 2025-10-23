@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function LivePhotoPage() {
+function LivePhotoContent() {
   const searchParams = useSearchParams();
   const [showVideos, setShowVideos] = useState(false);
   const [countdown, setCountdown] = useState(5);
@@ -232,5 +232,17 @@ export default function LivePhotoPage() {
       {/* 숨겨진 캔버스 (합성용) */}
       <canvas ref={canvasRef} className="hidden" />
     </div>
+  );
+}
+
+export default function LivePhotoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-white">라이브 포토를 불러오는 중...</p>
+      </div>
+    }>
+      <LivePhotoContent />
+    </Suspense>
   );
 }

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { findPhotoByCode } from '../../src/utils/photoUpload';
 import { downloadImage } from '../../src/utils/imageProcessing';
 
-export default function FindPhotoPage() {
+function FindPhotoContent() {
   const searchParams = useSearchParams();
   const [code, setCode] = useState('');
   const [photo, setPhoto] = useState(null);
@@ -231,5 +231,20 @@ export default function FindPhotoPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function FindPhotoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#fef5e7] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔍</div>
+          <p className="text-lg text-gray-600">사진을 찾는 중...</p>
+        </div>
+      </div>
+    }>
+      <FindPhotoContent />
+    </Suspense>
   );
 }
