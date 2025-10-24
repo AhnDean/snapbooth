@@ -261,8 +261,10 @@ function LivePhotoContent() {
       console.log('🔴 녹화 시작...');
 
       // 비디오 재생 중 프레임 그리기
-      const videoDuration = Math.max(...readyVideos.map(v => v.duration || 5));
-      console.log(`⏱️ 총 ${videoDuration.toFixed(1)}초 녹화 (비디오 ${readyVideos.length}개 동시 재생)`);
+      // 라이브 포토는 항상 10초로 고정 (비디오 루프 재생으로 10초 채움)
+      const videoDuration = 10;
+      const originalDuration = Math.max(...readyVideos.map(v => v.duration || 5));
+      console.log(`⏱️ 라이브 포토 녹화: ${videoDuration}초 (원본 비디오: ${originalDuration.toFixed(1)}초 - 루프 재생으로 10초 채움)`);
 
       let animationId;
       const animate = () => {
