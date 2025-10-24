@@ -13,6 +13,7 @@ function LivePhotoContent() {
   const [videoBlobUrls, setVideoBlobUrls] = useState([]); // CORS 우회용 Blob URLs
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRecording, setIsRecording] = useState(false); // 녹화 중 상태
   const videoRefs = useRef([]);
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -209,6 +210,7 @@ function LivePhotoContent() {
       };
 
       // 녹화 시작
+      setIsRecording(true);
       mediaRecorder.start();
       console.log('🔴 녹화 시작...');
 
@@ -234,6 +236,7 @@ function LivePhotoContent() {
       });
 
       const blob = await recordingComplete;
+      setIsRecording(false);
       console.log('📦 비디오 생성:', Math.round(blob.size / 1024 / 1024), 'MB');
 
       const filename = `chupbox_live_photo_${Date.now()}.webm`;
@@ -281,6 +284,7 @@ function LivePhotoContent() {
     } catch (error) {
       console.error('❌ 저장 실패:', error);
       console.error('에러 스택:', error.stack);
+      setIsRecording(false);
       alert('라이브 포토 저장에 실패했습니다.\n\n에러: ' + error.message + '\n\n콘솔 로그를 확인해주세요.');
     }
   };
@@ -311,7 +315,7 @@ function LivePhotoContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center p-4 pb-safe">
+    <div className="min-h-screen bg-black flex flex-col items-center p-4 overflow-y-auto">
       {/* 카운트다운 */}
       {!showVideos && (
         <div className="absolute inset-0 flex items-center justify-center z-10 bg-black bg-opacity-80">
@@ -326,18 +330,33 @@ function LivePhotoContent() {
         </div>
       )}
 
+      {/* 녹화 중 오버레이 */}
+      {isRecording && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black bg-opacity-90">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="text-2xl font-bold text-white mb-2">
+              🎥 비디오 생성 중...
+            </div>
+            <div className="text-sm text-gray-400">
+              잠시만 기다려주세요
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 비디오 그리드 - 4컷 사진과 정확히 동일한 레이아웃 */}
       <div
         ref={containerRef}
-        className="bg-white rounded-xl mt-4 mb-4"
+        className="bg-white rounded-xl mt-4 mb-4 flex-shrink-0"
         style={{
-          padding: '40px',
+          padding: '20px',
           display: 'grid',
-          gap: '20px',
-          gridTemplateColumns: layoutType === '2x2' ? 'repeat(2, 280px)' : '1fr',
-          gridTemplateRows: layoutType === '2x2' ? 'repeat(2, 280px)' : 'repeat(4, auto)',
+          gap: '10px',
+          gridTemplateColumns: layoutType === '2x2' ? 'repeat(2, 140px)' : '1fr',
+          gridTemplateRows: layoutType === '2x2' ? 'repeat(2, 140px)' : 'repeat(4, auto)',
           maxWidth: '90vw',
-          maxHeight: '60vh'
+          width: layoutType === '2x2' ? 'auto' : '300px'
         }}
       >
         {videoBlobUrls.map((videoBlobUrl, index) => (
