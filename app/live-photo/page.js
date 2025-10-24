@@ -243,53 +243,10 @@ function LivePhotoContent() {
 
       // iOS 기기 감지
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isAndroid = /Android/.test(navigator.userAgent);
 
-      // iOS에서는 다운로드 방식 우선 사용 (WebM은 갤러리 저장 불가)
-      if (isIOS) {
-        console.log('🍎 iOS 기기 감지 - 다운로드 방식 사용');
-
-        // 다운로드
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
-
-        console.log('✅ 다운로드 완료');
-        alert('✅ 라이브 포토가 저장되었습니다!\n\nSafari의 다운로드 버튼을 눌러\n파일 앱에서 확인하세요.\n\n💡 갤러리에 저장하려면:\n1. 파일 앱 열기\n2. 다운로드 폴더에서 영상 찾기\n3. 영상을 길게 눌러 공유 선택\n4. "비디오 저장" 선택');
-        return;
-      }
-
-      // 안드로이드/PC: Web Share API 시도
-      if (navigator.share) {
-        try {
-          const file = new File([blob], filename, { type: 'video/webm' });
-          const shareData = { files: [file], title: 'CHUPBOX 라이브 포토', text: '라이브 포토' };
-
-          console.log('📤 Web Share API 시도...');
-          await navigator.share(shareData);
-          console.log('✅ 공유 완료');
-          alert('✅ 라이브 포토가 저장되었습니다!');
-          return;
-        } catch (error) {
-          if (error.name === 'AbortError') {
-            console.log('❌ 사용자가 공유 취소');
-            return;
-          }
-          console.error('⚠️ 공유 실패:', error);
-          alert('공유 실패: ' + error.message + '\n다운로드로 시도합니다.');
-        }
-      }
-
-      // 다운로드 fallback
-      console.log('💾 다운로드 시작...');
+      // 다운로드 방식 사용 (Web Share API는 사용자 제스처 컨텍스트 손실로 신뢰 불가)
+      console.log('💾 다운로드 시작...', { isIOS, isAndroid });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -304,7 +261,15 @@ function LivePhotoContent() {
       }, 100);
 
       console.log('✅ 다운로드 완료');
-      alert('✅ 다운로드 완료! 다운로드 폴더를 확인하세요.');
+
+      // 기기별 안내 메시지
+      if (isIOS) {
+        alert('✅ 라이브 포토가 저장되었습니다!\n\n📱 Safari 다운로드 버튼을 눌러\n파일 앱에서 확인하세요.\n\n💡 갤러리에 저장하려면:\n1. 파일 앱 > 다운로드 폴더\n2. 영상을 길게 눌러 공유\n3. "비디오 저장" 선택');
+      } else if (isAndroid) {
+        alert('✅ 라이브 포토가 저장되었습니다!\n\n📱 다운로드 폴더에서 확인하세요.\n\n💡 일부 브라우저는 파일 앱이나\n갤러리 앱에서 확인 가능합니다.');
+      } else {
+        alert('✅ 다운로드 완료!\n\n💻 다운로드 폴더를 확인하세요.');
+      }
 
     } catch (error) {
       console.error('❌ 저장 실패:', error);
