@@ -102,9 +102,9 @@ function LivePhotoContent() {
     }
   }, [videoBlobUrls, loading]);
 
-  // 라이브 포토 저장 (Web Share API)
+  // 라이브 포토 저장 (MP4 비디오로 저장)
   const handleSaveLivePhoto = async () => {
-    console.log('🖼️ 라이브 포토 저장 시작...');
+    console.log('🎥 라이브 포토 MP4 저장 시작...');
 
     if (videoUrls.length === 0) {
       alert('동영상이 로드되지 않았습니다.');
@@ -117,13 +117,6 @@ function LivePhotoContent() {
       const videos = videoRefs.current;
 
       // 각 비디오 상태 확인
-      console.log('🎬 비디오 refs:', videos.filter(v => v).length, '개');
-      videos.forEach((v, i) => {
-        if (v) {
-          console.log(`비디오 ${i+1}: readyState=${v.readyState}, ${v.videoWidth}x${v.videoHeight}`);
-        }
-      });
-
       const readyVideos = videos.filter(v => v && v.readyState >= 2);
       console.log('✅ 준비된 비디오:', readyVideos.length, '개');
 
@@ -132,16 +125,11 @@ function LivePhotoContent() {
         return;
       }
 
-      // 모든 비디오가 재생 중인지 확인하고, 일시정지된 비디오는 현재 프레임 캡처를 위해 play 호출
+      // 모든 비디오를 처음부터 재생
       await Promise.all(readyVideos.map(async (video) => {
+        video.currentTime = 0;
         if (video.paused) {
-          try {
-            await video.play();
-            // 잠시 대기하여 프레임이 렌더링되도록 함
-            await new Promise(resolve => setTimeout(resolve, 100));
-          } catch (e) {
-            console.warn('비디오 재생 시도 실패 (무음이므로 괜찮음):', e);
-          }
+          await video.play().catch(e => console.warn('재생 실패:', e));
         }
       }));
 
@@ -155,79 +143,111 @@ function LivePhotoContent() {
       const spacing = 20;
       const padding = 40;
 
+      // 캔버스 크기 설정
       if (layoutType === '2x2') {
-        // 2x2 레이아웃: 정사각형
         const size = 280;
         canvas.width = (size * 2) + spacing + (padding * 2);
         canvas.height = (size * 2) + spacing + (padding * 2);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 2x2 위치
-        const positions = [
-          { x: padding, y: padding },
-          { x: padding + size + spacing, y: padding },
-          { x: padding, y: padding + size + spacing },
-          { x: padding + size + spacing, y: padding + size + spacing }
-        ];
-
-        for (let i = 0; i < Math.min(4, readyVideos.length); i++) {
-          const video = readyVideos[i];
-          const pos = positions[i];
-
-          // 정사각형으로 crop
-          const sourceSize = Math.min(video.videoWidth, video.videoHeight);
-          const sx = (video.videoWidth - sourceSize) / 2;
-          const sy = (video.videoHeight - sourceSize) / 2;
-
-          ctx.drawImage(video, sx, sy, sourceSize, sourceSize, pos.x, pos.y, size, size);
-        }
       } else {
-        // 1x4 레이아웃: 원본 비율 유지
         canvas.width = videoWidth + (padding * 2);
         canvas.height = (videoHeight * 4) + (spacing * 3) + (padding * 2);
+      }
 
+      console.log('🎨 캔버스 크기:', canvas.width, 'x', canvas.height);
+
+      // MediaRecorder 설정
+      const stream = canvas.captureStream(30); // 30 FPS
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 2500000 // 2.5 Mbps
+      });
+
+      const chunks = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      // 녹화 완료 처리
+      const recordingComplete = new Promise((resolve) => {
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          resolve(blob);
+        };
+      });
+
+      // 비디오 재생 애니메이션 함수
+      const drawFrame = () => {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        for (let i = 0; i < Math.min(4, readyVideos.length); i++) {
-          const video = readyVideos[i];
-          const y = padding + (i * (videoHeight + spacing));
-          ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, padding, y, videoWidth, videoHeight);
+        if (layoutType === '2x2') {
+          const size = 280;
+          const positions = [
+            { x: padding, y: padding },
+            { x: padding + size + spacing, y: padding },
+            { x: padding, y: padding + size + spacing },
+            { x: padding + size + spacing, y: padding + size + spacing }
+          ];
+
+          for (let i = 0; i < Math.min(4, readyVideos.length); i++) {
+            const video = readyVideos[i];
+            const pos = positions[i];
+            const sourceSize = Math.min(video.videoWidth, video.videoHeight);
+            const sx = (video.videoWidth - sourceSize) / 2;
+            const sy = (video.videoHeight - sourceSize) / 2;
+            ctx.drawImage(video, sx, sy, sourceSize, sourceSize, pos.x, pos.y, size, size);
+          }
+        } else {
+          for (let i = 0; i < Math.min(4, readyVideos.length); i++) {
+            const video = readyVideos[i];
+            const y = padding + (i * (videoHeight + spacing));
+            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, padding, y, videoWidth, videoHeight);
+          }
         }
-      }
-
-      console.log('🎨 캔버스 생성 완료:', canvas.width, 'x', canvas.height);
-
-      // Blob 생성을 Promise로 래핑
-      const createBlob = () => {
-        return new Promise((resolve, reject) => {
-          canvas.toBlob((blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error('Blob 생성 실패'));
-            }
-          }, 'image/jpeg', 0.95);
-        });
       };
 
-      const blob = await createBlob();
-      console.log('📦 Blob 생성:', Math.round(blob.size / 1024), 'KB');
+      // 녹화 시작
+      mediaRecorder.start();
+      console.log('🔴 녹화 시작...');
 
-      const filename = `chupbox_live_photo_${Date.now()}.jpg`;
+      // 비디오 재생 중 프레임 그리기
+      const videoDuration = Math.max(...readyVideos.map(v => v.duration || 5));
+      console.log(`⏱️ 총 ${videoDuration.toFixed(1)}초 녹화`);
+
+      let animationId;
+      const animate = () => {
+        drawFrame();
+        animationId = requestAnimationFrame(animate);
+      };
+      animate();
+
+      // 비디오 종료 대기
+      await new Promise(resolve => {
+        setTimeout(() => {
+          cancelAnimationFrame(animationId);
+          mediaRecorder.stop();
+          console.log('⏹️ 녹화 종료');
+          resolve();
+        }, videoDuration * 1000);
+      });
+
+      const blob = await recordingComplete;
+      console.log('📦 비디오 생성:', Math.round(blob.size / 1024 / 1024), 'MB');
+
+      const filename = `chupbox_live_photo_${Date.now()}.webm`;
 
       // Web Share API 시도 (iPhone Safari)
       if (navigator.share) {
         try {
-          const file = new File([blob], filename, { type: 'image/jpeg' });
+          const file = new File([blob], filename, { type: 'video/webm' });
           const shareData = { files: [file], title: 'CHUPBOX 라이브 포토', text: '라이브 포토' };
 
           console.log('📤 Web Share API 시도...');
           await navigator.share(shareData);
           console.log('✅ 공유 완료');
-          alert('✅ 사진이 저장되었습니다! 사진 앱에서 확인하세요.');
+          alert('✅ 라이브 포토가 저장되었습니다! 사진 앱에서 확인하세요.');
           return;
         } catch (error) {
           if (error.name === 'AbortError') {
