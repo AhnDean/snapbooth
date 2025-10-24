@@ -798,6 +798,7 @@ export default function BoothPage() {
                   ref={cameraRef}
                   autoCapture={isAutoMode && countdown === 0 && fourCutPhotos.length < 4 && !isReviewingPhoto}
                   is4CutMode={true}
+                  isAutoMode={isAutoMode}
                   isReviewingPhoto={isReviewingPhoto}
                   reviewPhoto={lastCapturedPhoto}
                   onProceedNext={proceedToNextPhoto}

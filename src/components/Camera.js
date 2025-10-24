@@ -14,7 +14,8 @@ const Camera = forwardRef(({
   isReviewingPhoto = false,
   reviewPhoto = null,
   onProceedNext = null,
-  onRetake = null
+  onRetake = null,
+  isAutoMode = false // 자동 촬영 중인지 여부
 }, ref) => {
   const webcamRef = useRef(null);
   const [isWebcamOn, setIsWebcamOn] = useState(true); // 자동으로 켜짐
@@ -377,12 +378,17 @@ const Camera = forwardRef(({
 
       {/* 컨트롤 버튼들 */}
       <div className="flex justify-center items-center gap-4 mt-6">
-        {/* 카메라 전환 버튼 */}
+        {/* 카메라 전환 버튼 - 자동 촬영 중에는 비활성화 */}
         {!capturedImage && (
           <button
             onClick={switchCamera}
-            className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
-            title={facingMode === 'user' ? '후면 카메라로 전환' : '전면 카메라로 전환'}
+            disabled={isAutoMode}
+            className={`flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 transform shadow-lg ${
+              isAutoMode
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 hover:scale-105'
+            } text-white`}
+            title={isAutoMode ? '자동 촬영 중에는 카메라 전환 불가' : (facingMode === 'user' ? '후면 카메라로 전환' : '전면 카메라로 전환')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
