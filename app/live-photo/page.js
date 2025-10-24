@@ -323,10 +323,21 @@ function LivePhotoContent() {
         {videoBlobUrls.map((videoBlobUrl, index) => (
           <div
             key={index}
-            className="relative bg-gray-900 rounded overflow-hidden"
+            className="relative bg-gray-900 rounded overflow-hidden cursor-pointer"
             style={{
               width: '100%',
               aspectRatio: layoutType === '2x2' ? '1 / 1' : '4 / 3'
+            }}
+            onClick={(e) => {
+              // 비디오 클릭 시 재생/일시정지 토글
+              const video = videoRefs.current[index];
+              if (video) {
+                if (video.paused) {
+                  video.play().catch(err => console.error('재생 실패:', err));
+                } else {
+                  video.pause();
+                }
+              }
             }}
           >
             <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
@@ -335,6 +346,7 @@ function LivePhotoContent() {
             <video
               ref={el => videoRefs.current[index] = el}
               src={videoBlobUrl}
+              autoPlay
               loop
               muted
               playsInline
@@ -344,6 +356,12 @@ function LivePhotoContent() {
                 objectFit: layoutType === '2x2' ? 'cover' : 'contain',
                 opacity: showVideos ? 1 : 0.3,
                 transition: 'opacity 0.5s'
+              }}
+              onLoadedData={(e) => {
+                console.log(`✅ 비디오 ${index + 1} 로드 완료, 재생 시도...`);
+                e.target.play().catch(err => {
+                  console.error(`❌ 비디오 ${index + 1} 자동재생 실패:`, err);
+                });
               }}
             />
           </div>
@@ -368,9 +386,14 @@ function LivePhotoContent() {
         </div>
       )}
 
-      <p className="text-white text-sm mt-4 text-center">
-        🎥 촬영 전 준비하는 모습을 담은 라이브 포토
-      </p>
+      <div className="text-center mt-4">
+        <p className="text-white text-sm">
+          🎥 촬영 전 준비하는 모습을 담은 라이브 포토
+        </p>
+        <p className="text-gray-400 text-xs mt-1">
+          💡 비디오를 탭하면 재생/일시정지됩니다
+        </p>
+      </div>
 
       {/* 숨겨진 캔버스 (합성용) */}
       <canvas ref={canvasRef} className="hidden" />
