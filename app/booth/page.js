@@ -497,7 +497,9 @@ export default function BoothPage() {
   useEffect(() => {
     if (isAutoMode && countdown > 0) {
       // 카운트다운이 countdownDuration에서 시작할 때 (새로운 컷 시작) 녹화 시작
-      if (countdown === countdownDuration && fourCutPhotos.length < 4) {
+      // 단, fourCutPhotos.length > 0일 때만 (첫 번째는 버튼 클릭에서 시작)
+      if (countdown === countdownDuration && fourCutPhotos.length > 0 && fourCutPhotos.length < 4) {
+        console.log(`🎥 ${fourCutPhotos.length + 1}번째 촬영을 위한 녹화 시작 (useEffect)`);
         startVideoRecording();
       }
 
