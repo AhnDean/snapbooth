@@ -105,10 +105,23 @@ function LivePhotoContent() {
 
   // 라이브 포토 저장 (MP4 비디오로 저장)
   const handleSaveLivePhoto = async () => {
-    console.log('🎥 라이브 포토 MP4 저장 시작...');
+    console.log('🎥 라이브 포토 저장 시작...');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    console.log('📱 기기 정보:', {
+      userAgent: navigator.userAgent,
+      isIOS,
+      mediaRecorderSupported: typeof MediaRecorder !== 'undefined'
+    });
 
     if (videoUrls.length === 0) {
       alert('동영상이 로드되지 않았습니다.');
+      return;
+    }
+
+    // MediaRecorder 지원 확인
+    if (typeof MediaRecorder === 'undefined') {
+      console.error('❌ MediaRecorder API 미지원');
+      alert('죄송합니다. 이 브라우저는 비디오 녹화를 지원하지 않습니다.\n\n최신 Safari 또는 Chrome을 사용해주세요.');
       return;
     }
 
@@ -156,11 +169,40 @@ function LivePhotoContent() {
 
       console.log('🎨 캔버스 크기:', canvas.width, 'x', canvas.height);
 
-      // MediaRecorder 설정
+      // MediaRecorder 설정 - 코덱 지원 확인
       const stream = canvas.captureStream(30); // 30 FPS
+
+      // 지원되는 코덱 확인
+      const mimeTypes = [
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+        'video/mp4'
+      ];
+
+      let selectedMimeType = '';
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          console.log('✅ 지원되는 코덱:', mimeType);
+          break;
+        } else {
+          console.log('❌ 미지원 코덱:', mimeType);
+        }
+      }
+
+      if (!selectedMimeType) {
+        throw new Error('지원되는 비디오 코덱이 없습니다.');
+      }
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType: selectedMimeType,
         videoBitsPerSecond: 2500000 // 2.5 Mbps
+      });
+
+      console.log('🎬 MediaRecorder 생성:', {
+        mimeType: selectedMimeType,
+        state: mediaRecorder.state
       });
 
       const chunks = [];
@@ -173,7 +215,11 @@ function LivePhotoContent() {
       // 녹화 완료 처리
       const recordingComplete = new Promise((resolve) => {
         mediaRecorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'video/webm' });
+          const blob = new Blob(chunks, { type: selectedMimeType });
+          console.log('📦 Blob 생성 완료:', {
+            size: Math.round(blob.size / 1024),
+            type: blob.type
+          });
           resolve(blob);
         };
       });
@@ -216,7 +262,7 @@ function LivePhotoContent() {
 
       // 비디오 재생 중 프레임 그리기
       const videoDuration = Math.max(...readyVideos.map(v => v.duration || 5));
-      console.log(`⏱️ 총 ${videoDuration.toFixed(1)}초 녹화`);
+      console.log(`⏱️ 총 ${videoDuration.toFixed(1)}초 녹화 (비디오 ${readyVideos.length}개 동시 재생)`);
 
       let animationId;
       const animate = () => {
@@ -237,9 +283,12 @@ function LivePhotoContent() {
 
       const blob = await recordingComplete;
       setIsRecording(false);
-      console.log('📦 비디오 생성:', Math.round(blob.size / 1024 / 1024), 'MB');
+      console.log('📦 비디오 생성 완료:', Math.round(blob.size / 1024 / 1024), 'MB');
 
-      const filename = `chupbox_live_photo_${Date.now()}.webm`;
+      // 파일 확장자 결정
+      const extension = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+      const filename = `chupbox_live_photo_${Date.now()}.${extension}`;
+      console.log('💾 파일명:', filename);
 
       // iOS 기기 감지
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -320,11 +369,11 @@ function LivePhotoContent() {
         </div>
       )}
 
-      {/* 녹화 중 오버레이 */}
+      {/* 녹화 중 오버레이 - fixed positioning for iOS */}
       {isRecording && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black bg-opacity-90">
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-90">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
             <div className="text-2xl font-bold text-white mb-2">
               🎥 비디오 생성 중...
             </div>
