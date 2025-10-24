@@ -175,8 +175,17 @@ function LivePhotoContent() {
 
       console.log('🎨 캔버스 크기:', canvas.width, 'x', canvas.height);
 
+      // canvas.captureStream 지원 확인
+      if (typeof canvas.captureStream !== 'function') {
+        throw new Error('captureStream - 이 브라우저는 캔버스 스트림 캡처를 지원하지 않습니다.');
+      }
+
       // MediaRecorder 설정 - 코덱 지원 확인
       const stream = canvas.captureStream(30); // 30 FPS
+      console.log('📹 캔버스 스트림 생성 완료:', {
+        active: stream.active,
+        tracks: stream.getTracks().length
+      });
 
       // 지원되는 코덱 확인
       const mimeTypes = [
@@ -198,18 +207,24 @@ function LivePhotoContent() {
       }
 
       if (!selectedMimeType) {
-        throw new Error('지원되는 비디오 코덱이 없습니다.');
+        throw new Error('codec - 지원되는 비디오 코덱이 없습니다. 이 기기에서는 라이브 포토를 생성할 수 없습니다.');
       }
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: selectedMimeType,
-        videoBitsPerSecond: 2500000 // 2.5 Mbps
-      });
+      let mediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: selectedMimeType,
+          videoBitsPerSecond: 2500000 // 2.5 Mbps
+        });
 
-      console.log('🎬 MediaRecorder 생성:', {
-        mimeType: selectedMimeType,
-        state: mediaRecorder.state
-      });
+        console.log('🎬 MediaRecorder 생성 성공:', {
+          mimeType: selectedMimeType,
+          state: mediaRecorder.state
+        });
+      } catch (recorderError) {
+        console.error('❌ MediaRecorder 생성 실패:', recorderError);
+        throw new Error(`MediaRecorder - ${recorderError.message}`);
+      }
 
       const chunks = [];
       mediaRecorder.ondataavailable = (e) => {
@@ -331,8 +346,28 @@ function LivePhotoContent() {
     } catch (error) {
       console.error('❌ 저장 실패:', error);
       console.error('에러 스택:', error.stack);
+      console.error('에러 이름:', error.name);
+      console.error('에러 메시지:', error.message);
+
+      // 반드시 isRecording을 false로 설정
       setIsRecording(false);
-      alert('라이브 포토 저장에 실패했습니다.\n\n에러: ' + error.message + '\n\n콘솔 로그를 확인해주세요.');
+
+      // 사용자 친화적인 에러 메시지
+      let errorMessage = '라이브 포토 저장에 실패했습니다.\n\n';
+
+      if (error.message.includes('codec') || error.message.includes('mimeType')) {
+        errorMessage += '이 기기는 비디오 녹화를 지원하지 않습니다.\n\n대신 스크린샷을 촬영해주세요.';
+      } else if (error.message.includes('captureStream')) {
+        errorMessage += '이 브라우저는 비디오 녹화를 지원하지 않습니다.\n\n최신 Chrome 또는 Safari를 사용해주세요.';
+      } else {
+        errorMessage += `에러: ${error.message}\n\n콘솔 로그를 확인해주세요.`;
+      }
+
+      alert(errorMessage);
+    } finally {
+      // 어떤 경우에도 isRecording을 false로 설정
+      setIsRecording(false);
+      console.log('🔄 isRecording 상태 초기화 완료');
     }
   };
 
