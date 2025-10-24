@@ -311,7 +311,7 @@ function LivePhotoContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-black flex flex-col items-center p-4 pb-safe">
       {/* 카운트다운 */}
       {!showVideos && (
         <div className="absolute inset-0 flex items-center justify-center z-10 bg-black bg-opacity-80">
@@ -329,7 +329,7 @@ function LivePhotoContent() {
       {/* 비디오 그리드 - 4컷 사진과 정확히 동일한 레이아웃 */}
       <div
         ref={containerRef}
-        className="bg-white rounded-xl"
+        className="bg-white rounded-xl mt-4 mb-4"
         style={{
           padding: '40px',
           display: 'grid',
@@ -337,7 +337,7 @@ function LivePhotoContent() {
           gridTemplateColumns: layoutType === '2x2' ? 'repeat(2, 280px)' : '1fr',
           gridTemplateRows: layoutType === '2x2' ? 'repeat(2, 280px)' : 'repeat(4, auto)',
           maxWidth: '90vw',
-          maxHeight: '90vh'
+          maxHeight: '60vh'
         }}
       >
         {videoBlobUrls.map((videoBlobUrl, index) => (
@@ -388,25 +388,7 @@ function LivePhotoContent() {
         ))}
       </div>
 
-      {/* 하단 버튼 */}
-      {showVideos && (
-        <div className="mt-6 flex gap-4">
-          <button
-            onClick={handleSaveLivePhoto}
-            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-bold shadow-lg"
-          >
-            📥 사진 저장하기
-          </button>
-          <button
-            onClick={() => window.close()}
-            className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold"
-          >
-            닫기
-          </button>
-        </div>
-      )}
-
-      <div className="text-center mt-4">
+      <div className="text-center mt-2 mb-4">
         <p className="text-white text-sm">
           🎥 촬영 전 준비하는 모습을 담은 라이브 포토
         </p>
@@ -414,6 +396,24 @@ function LivePhotoContent() {
           💡 비디오를 탭하면 재생/일시정지됩니다
         </p>
       </div>
+
+      {/* 하단 버튼 - 고정 */}
+      {showVideos && (
+        <div className="mt-auto w-full max-w-md flex flex-col gap-3 px-4">
+          <button
+            onClick={handleSaveLivePhoto}
+            className="w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-bold shadow-lg text-lg"
+          >
+            📥 라이브 포토 저장하기
+          </button>
+          <button
+            onClick={() => window.close()}
+            className="w-full px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold"
+          >
+            닫기
+          </button>
+        </div>
+      )}
 
       {/* 숨겨진 캔버스 (합성용) */}
       <canvas ref={canvasRef} className="hidden" />
