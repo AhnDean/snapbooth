@@ -535,8 +535,8 @@ export default function BoothPage() {
   useEffect(() => {
     if (isAutoMode && countdown > 0) {
       // 카운트다운이 countdownDuration에서 시작할 때 (새로운 컷 시작) 녹화 시작
-      // 단, fourCutPhotos.length > 0일 때만 (첫 번째는 버튼 클릭에서 시작)
-      if (countdown === countdownDuration && fourCutPhotos.length > 0 && fourCutPhotos.length < 4) {
+      // 첫 번째 사진도 포함 (>= 0)
+      if (countdown === countdownDuration && fourCutPhotos.length >= 0 && fourCutPhotos.length < 4) {
         console.log(`🎥 ${fourCutPhotos.length + 1}번째 촬영을 위한 녹화 시작 (useEffect)`);
         startVideoRecording();
       }
@@ -668,11 +668,8 @@ export default function BoothPage() {
                       setCountdown(countdownDuration);
                       showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
 
-                      // 첫 번째 동영상 녹화 즉시 시작
-                      console.log('🎥 첫 번째 비디오 녹화 시작 시도...');
-                      const recordingStartTime = Date.now();
-                      startVideoRecording();
-                      console.log(`✅ startVideoRecording() 호출 완료 (${Date.now() - recordingStartTime}ms)`);
+                      // 첫 번째 동영상 녹화는 useEffect에서 자동으로 시작됨
+                      console.log('🎥 첫 번째 비디오 녹화는 useEffect에서 자동 시작 예정');
                     }}
                     className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >

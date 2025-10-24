@@ -104,7 +104,13 @@ function LivePhotoContent() {
   }, [videoBlobUrls, loading]);
 
   // 라이브 포토 저장 (MP4 비디오로 저장)
-  const handleSaveLivePhoto = async () => {
+  const handleSaveLivePhoto = async (e) => {
+    // 기본 동작 방지 (혹시 폼 제출이나 링크 클릭일 경우)
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     console.log('🎥 라이브 포토 저장 시작...');
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     console.log('📱 기기 정보:', {
