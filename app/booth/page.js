@@ -292,6 +292,15 @@ export default function BoothPage() {
 
   // 4컷 사진 촬영 핸들러
   const handle4CutCapture = useCallback(async (photoDataUrl) => {
+    const photoNumber = fourCutPhotos.length + 1;
+    console.log(`📸 ${photoNumber}번째 사진 촬영 핸들러 시작`);
+    console.log(`📊 촬영 전 상태:`, {
+      photoNumber,
+      isRecording,
+      currentVideosInRef: recordedVideosRef.current.length,
+      fourCutPhotosLength: fourCutPhotos.length
+    });
+
     // 이미 4컷 완성되었으면 더 이상 촬영 불가
     if (fourCutPhotos.length >= 4) {
       showNotification('이미 4컷 촬영이 완료되었습니다!', 'info');
@@ -303,15 +312,27 @@ export default function BoothPage() {
     let currentVideos = [...recordedVideosRef.current]; // Ref에서 최신 값 가져오기
 
     if (isRecording) {
+      console.log(`🎥 ${photoNumber}번째 비디오 녹화 종료 시도...`);
+      const stopStartTime = Date.now();
       videoBlob = await stopVideoRecording();
+      console.log(`⏱️ stopVideoRecording() 완료 (${Date.now() - stopStartTime}ms)`);
+
       if (videoBlob) {
+        console.log(`📦 ${photoNumber}번째 비디오 Blob 생성:`, {
+          size: Math.round(videoBlob.size / 1024),
+          type: videoBlob.type
+        });
         currentVideos = [...currentVideos, videoBlob]; // 로컬 배열에 추가
         recordedVideosRef.current = currentVideos; // Ref 업데이트
         setRecordedVideos(currentVideos); // state 업데이트 (UI용)
-        console.log(`✅ ${fourCutPhotos.length + 1}번째 동영상 저장 완료 (총 ${currentVideos.length}개)`);
+        console.log(`✅ ${photoNumber}번째 동영상 저장 완료 (총 ${currentVideos.length}개)`);
+      } else {
+        console.error(`❌ ${photoNumber}번째 비디오 Blob이 null입니다!`);
       }
     } else {
-      console.warn(`⚠️ ${fourCutPhotos.length + 1}번째 사진 촬영 시 녹화 중이 아님!`);
+      console.warn(`⚠️ ${photoNumber}번째 사진 촬영 시 녹화 중이 아님!`);
+      console.warn('   isRecording 상태:', isRecording);
+      console.warn('   videoRecorder 상태:', videoRecorder);
     }
 
     // 자동 모드: 바로 배열에 추가하고 다음 촬영
@@ -321,15 +342,25 @@ export default function BoothPage() {
 
       // 4번째 사진 촬영 완료 시 - 합성 시작
       if (newPhotos.length === 4) {
+        console.log('🎉 4컷 촬영 완료!');
+        console.log(`📹 최종 동영상 개수: ${currentVideos.length}개`);
+        console.log('📊 최종 상태:', {
+          photos: newPhotos.length,
+          videos: currentVideos.length,
+          videosInRef: recordedVideosRef.current.length
+        });
+
         setCountdown(0);
         setIsAutoMode(false);
-
         showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
-        console.log(`📹 최종 동영상 개수: ${currentVideos.length}개`);
+
         // 로컬 동영상 배열을 직접 전달 (state는 아직 업데이트 안 됐을 수 있음)
         await create4CutImage(newPhotos, currentVideos);
       } else {
         // 다음 촬영 준비 (1, 2, 3번째 사진 후)
+        console.log(`➡️ 다음 촬영 준비 (${newPhotos.length}/4)`);
+        console.log(`🎥 다음 비디오(${newPhotos.length + 1}번째) 녹화 시작 예정`);
+
         setTimeout(() => {
           setCountdown(countdownDuration);
           showNotification(`${newPhotos.length}/4 촬영 완료! ${countdownDuration}초 후 다음 촬영`, 'success');
@@ -626,11 +657,22 @@ export default function BoothPage() {
                 {!isAutoMode && fourCutPhotos.length === 0 && (
                   <button
                     onClick={() => {
+                      console.log('🎬 자동 촬영 시작 버튼 클릭');
+                      console.log('📊 현재 상태:', {
+                        isRecording,
+                        recordedVideosCount: recordedVideosRef.current.length,
+                        fourCutPhotosCount: fourCutPhotos.length
+                      });
+
                       setIsAutoMode(true);
                       setCountdown(countdownDuration);
                       showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
+
                       // 첫 번째 동영상 녹화 즉시 시작
+                      console.log('🎥 첫 번째 비디오 녹화 시작 시도...');
+                      const recordingStartTime = Date.now();
                       startVideoRecording();
+                      console.log(`✅ startVideoRecording() 호출 완료 (${Date.now() - recordingStartTime}ms)`);
                     }}
                     className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >

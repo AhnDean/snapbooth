@@ -241,7 +241,33 @@ function LivePhotoContent() {
 
       const filename = `chupbox_live_photo_${Date.now()}.webm`;
 
-      // Web Share API 시도 (iPhone Safari)
+      // iOS 기기 감지
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+      // iOS에서는 다운로드 방식 우선 사용 (WebM은 갤러리 저장 불가)
+      if (isIOS) {
+        console.log('🍎 iOS 기기 감지 - 다운로드 방식 사용');
+
+        // 다운로드
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+
+        console.log('✅ 다운로드 완료');
+        alert('✅ 라이브 포토가 저장되었습니다!\n\nSafari의 다운로드 버튼을 눌러\n파일 앱에서 확인하세요.\n\n💡 갤러리에 저장하려면:\n1. 파일 앱 열기\n2. 다운로드 폴더에서 영상 찾기\n3. 영상을 길게 눌러 공유 선택\n4. "비디오 저장" 선택');
+        return;
+      }
+
+      // 안드로이드/PC: Web Share API 시도
       if (navigator.share) {
         try {
           const file = new File([blob], filename, { type: 'video/webm' });
@@ -250,7 +276,7 @@ function LivePhotoContent() {
           console.log('📤 Web Share API 시도...');
           await navigator.share(shareData);
           console.log('✅ 공유 완료');
-          alert('✅ 라이브 포토가 저장되었습니다! 사진 앱에서 확인하세요.');
+          alert('✅ 라이브 포토가 저장되었습니다!');
           return;
         } catch (error) {
           if (error.name === 'AbortError') {
@@ -272,7 +298,6 @@ function LivePhotoContent() {
       document.body.appendChild(a);
       a.click();
 
-      // 약간의 지연 후 정리
       setTimeout(() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
@@ -421,13 +446,19 @@ function LivePhotoContent() {
         <div className="mt-auto w-full max-w-md flex flex-col gap-3 px-4">
           <button
             onClick={handleSaveLivePhoto}
-            className="w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-bold shadow-lg text-lg"
+            disabled={isRecording}
+            className={`w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-bold shadow-lg text-lg transition-opacity ${
+              isRecording ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             📥 라이브 포토 저장하기
           </button>
           <button
             onClick={() => window.close()}
-            className="w-full px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold"
+            disabled={isRecording}
+            className={`w-full px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition-opacity ${
+              isRecording ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             닫기
           </button>

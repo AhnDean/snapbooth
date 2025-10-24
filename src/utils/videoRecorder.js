@@ -19,8 +19,16 @@ class VideoRecorder {
    * @returns {Promise<void>}
    */
   async startRecording(stream) {
+    const startTime = Date.now();
+    console.log(`🎬 [VideoRecorder] startRecording() 호출 시각: ${new Date().toISOString()}`);
+
     if (this.isRecording) {
-      console.warn('이미 녹화 중입니다');
+      console.warn('⚠️ [VideoRecorder] 이미 녹화 중입니다');
+      console.warn('   현재 상태:', {
+        isRecording: this.isRecording,
+        mediaRecorder: !!this.mediaRecorder,
+        chunksCount: this.recordedChunks.length
+      });
       return;
     }
 
@@ -53,13 +61,16 @@ class VideoRecorder {
       this.mediaRecorder.start(100); // 100ms마다 데이터 수집
       this.isRecording = true;
 
-      console.log('✅ 녹화 시작:', {
+      const elapsed = Date.now() - startTime;
+      console.log(`✅ [VideoRecorder] 녹화 시작 완료 (${elapsed}ms):`, {
         mimeType: this.mediaRecorder.mimeType,
-        videoBitsPerSecond: options.videoBitsPerSecond
+        videoBitsPerSecond: options.videoBitsPerSecond,
+        state: this.mediaRecorder.state,
+        timestamp: new Date().toISOString()
       });
 
     } catch (error) {
-      console.error('❌ 녹화 시작 실패:', error);
+      console.error('❌ [VideoRecorder] 녹화 시작 실패:', error);
       this.isRecording = false;
       throw error;
     }
@@ -70,8 +81,15 @@ class VideoRecorder {
    * @returns {Promise<Blob>} - 녹화된 동영상 Blob
    */
   stopRecording() {
+    const stopTime = Date.now();
+    console.log(`⏹️ [VideoRecorder] stopRecording() 호출 시각: ${new Date().toISOString()}`);
+
     return new Promise((resolve, reject) => {
       if (!this.isRecording || !this.mediaRecorder) {
+        console.error('❌ [VideoRecorder] 녹화 중이 아닙니다:', {
+          isRecording: this.isRecording,
+          hasMediaRecorder: !!this.mediaRecorder
+        });
         reject(new Error('녹화 중이 아닙니다'));
         return;
       }
@@ -84,29 +102,32 @@ class VideoRecorder {
 
           const durationInSeconds = (this.recordedChunks.length * 100) / 1000; // 대략적인 시간
           const fileSizeMB = (blob.size / 1024 / 1024).toFixed(2);
+          const elapsed = Date.now() - stopTime;
 
-          console.log('✅ 녹화 완료:', {
+          console.log(`✅ [VideoRecorder] 녹화 완료 (${elapsed}ms):`, {
             duration: `약 ${durationInSeconds.toFixed(1)}초`,
             fileSize: `${fileSizeMB} MB`,
             type: blob.type,
-            chunks: this.recordedChunks.length
+            chunks: this.recordedChunks.length,
+            timestamp: new Date().toISOString()
           });
 
           this.isRecording = false;
           resolve(blob);
         } catch (error) {
-          console.error('❌ 녹화 종료 처리 실패:', error);
+          console.error('❌ [VideoRecorder] 녹화 종료 처리 실패:', error);
           reject(error);
         }
       };
 
       this.mediaRecorder.onerror = (error) => {
-        console.error('❌ MediaRecorder 오류:', error);
+        console.error('❌ [VideoRecorder] MediaRecorder 오류:', error);
         this.isRecording = false;
         reject(error);
       };
 
       this.mediaRecorder.stop();
+      console.log(`📡 [VideoRecorder] mediaRecorder.stop() 호출됨`);
     });
   }
 
