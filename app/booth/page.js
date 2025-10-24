@@ -40,6 +40,7 @@ export default function BoothPage() {
   // 동영상 녹화 상태
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideos, setRecordedVideos] = useState([]); // 녹화된 동영상 배열 (4개)
+  const recordedVideosRef = useRef([]); // 녹화된 동영상 Ref (최신 값 유지)
   const [currentVideoBlob, setCurrentVideoBlob] = useState(null); // 현재 녹화 중인 비디오
 
   // QR 코드 상태
@@ -263,6 +264,7 @@ export default function BoothPage() {
     setPhotoCode(null); // 코드 초기화
     // 동영상 초기화
     setRecordedVideos([]);
+    recordedVideosRef.current = []; // Ref도 초기화
     setCurrentVideoBlob(null);
     setIsRecording(false);
     videoRecorder.cleanup();
@@ -282,6 +284,7 @@ export default function BoothPage() {
     }
     // 동영상 초기화
     setRecordedVideos([]);
+    recordedVideosRef.current = []; // Ref도 초기화
     setCurrentVideoBlob(null);
     setIsRecording(false);
     videoRecorder.cleanup();
@@ -297,13 +300,14 @@ export default function BoothPage() {
 
     // 동영상 녹화 중이면 종료하고 저장
     let videoBlob = null;
-    let currentVideos = [...recordedVideos]; // 현재 동영상 배열 복사
+    let currentVideos = [...recordedVideosRef.current]; // Ref에서 최신 값 가져오기
 
     if (isRecording) {
       videoBlob = await stopVideoRecording();
       if (videoBlob) {
         currentVideos = [...currentVideos, videoBlob]; // 로컬 배열에 추가
-        setRecordedVideos(currentVideos); // state 업데이트
+        recordedVideosRef.current = currentVideos; // Ref 업데이트
+        setRecordedVideos(currentVideos); // state 업데이트 (UI용)
         console.log(`✅ ${fourCutPhotos.length + 1}번째 동영상 저장 완료 (총 ${currentVideos.length}개)`);
       }
     } else {
@@ -338,7 +342,7 @@ export default function BoothPage() {
       setCountdown(0);
       showNotification('사진이 촬영되었습니다. 다시 찍기를 원하면 버튼을 누르세요.', 'success');
     }
-  }, [fourCutPhotos.length, isAutoMode, countdownDuration, isRecording, recordedVideos]);
+  }, [fourCutPhotos.length, isAutoMode, countdownDuration, isRecording]);
 
   // 다음 컷으로 진행 (촬영 버튼을 다시 누르면)
   const proceedToNextPhoto = useCallback(async () => {
