@@ -306,6 +306,8 @@ export default function BoothPage() {
         setRecordedVideos(currentVideos); // state 업데이트
         console.log(`✅ ${fourCutPhotos.length + 1}번째 동영상 저장 완료 (총 ${currentVideos.length}개)`);
       }
+    } else {
+      console.warn(`⚠️ ${fourCutPhotos.length + 1}번째 사진 촬영 시 녹화 중이 아님!`);
     }
 
     // 자동 모드: 바로 배열에 추가하고 다음 촬영
@@ -319,6 +321,7 @@ export default function BoothPage() {
         setIsAutoMode(false);
 
         showNotification('4컷 촬영 완료! 이미지 합성 중...', 'success');
+        console.log(`📹 최종 동영상 개수: ${currentVideos.length}개`);
         // 로컬 동영상 배열을 직접 전달 (state는 아직 업데이트 안 됐을 수 있음)
         await create4CutImage(newPhotos, currentVideos);
       } else {
@@ -335,7 +338,7 @@ export default function BoothPage() {
       setCountdown(0);
       showNotification('사진이 촬영되었습니다. 다시 찍기를 원하면 버튼을 누르세요.', 'success');
     }
-  }, [fourCutPhotos.length, isAutoMode, countdownDuration, isRecording]);
+  }, [fourCutPhotos.length, isAutoMode, countdownDuration, isRecording, recordedVideos]);
 
   // 다음 컷으로 진행 (촬영 버튼을 다시 누르면)
   const proceedToNextPhoto = useCallback(async () => {
