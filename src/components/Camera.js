@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHand
 import Webcam from 'react-webcam';
 import { CAMERA_CONSTRAINTS, PREFERRED_RESOLUTIONS, ERROR_MESSAGES } from '../utils/constants';
 import { normalizeResolution } from '../utils/imageProcessing';
+import { useTranslation } from '../hooks/useTranslation';
 
 const Camera = forwardRef(({
   onCapture,
@@ -17,6 +18,7 @@ const Camera = forwardRef(({
   onRetake = null,
   isAutoMode = false // 자동 촬영 중인지 여부
 }, ref) => {
+  const { t } = useTranslation();
   const webcamRef = useRef(null);
   const [isWebcamOn, setIsWebcamOn] = useState(true); // 자동으로 켜짐
   const [capturedImage, setCapturedImage] = useState(null);
@@ -449,7 +451,7 @@ const Camera = forwardRef(({
       <div className="flex justify-center mt-4 gap-3">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          카메라 켜짐 ({facingMode === 'user' ? '전면' : '후면'})
+          {t('booth.cameraOn')} ({facingMode === 'user' ? t('booth.cameraFront') : t('booth.cameraRear')})
         </div>
         {cameraResolution && (
           <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">

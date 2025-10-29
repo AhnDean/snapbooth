@@ -5,6 +5,8 @@ import Link from 'next/link';
 import QRCode from 'qrcode';
 import Camera from '../../src/components/Camera';
 import FrameGallery from '../../src/components/FrameGallery';
+import LanguageSelector from '../../src/components/LanguageSelector';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { applyFrame, downloadImage, generateFilename, create4CutLayout } from '../../src/utils/imageProcessing';
 import { FRAMES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../src/utils/constants';
 import { uploadPhotoToCloud, uploadVideosToCloud, saveVideoUrls } from '../../src/utils/photoUpload';
@@ -14,6 +16,7 @@ import videoRecorder from '../../src/utils/videoRecorder';
 export const dynamic = 'force-dynamic';
 
 export default function BoothPage() {
+  const { t } = useTranslation();
   const [selectedFrame, setSelectedFrame] = useState(null);
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [processedPhoto, setProcessedPhoto] = useState(null);
@@ -572,23 +575,17 @@ export default function BoothPage() {
       <header className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-20">
-            <div className="flex items-center gap-2 sm:gap-3">
+            {/* 로고 */}
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
               <h1 className="text-xl sm:text-3xl font-bold">
                 <span style={{ color: '#ee5253' }}>CHUP</span>
                 <span style={{ color: '#f7d945' }}>BOX</span>
               </h1>
               <p className="hidden sm:block text-sm text-gray-500 ml-2">Capture Memories</p>
-            </div>
+            </Link>
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              {/* 홈으로 돌아가기 */}
-              <Link
-                href="/"
-                className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                홈으로
-              </Link>
-            </div>
+            {/* 언어 선택기 */}
+            <LanguageSelector />
           </div>
         </div>
       </header>
@@ -606,44 +603,44 @@ export default function BoothPage() {
                   {/* 레이아웃 선택 */}
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
-                      레이아웃
+                      {t('booth.layout')}
                     </label>
                     <select
                       value={layoutType}
                       onChange={(e) => setLayoutType(e.target.value)}
                       className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base text-gray-700 font-medium"
                     >
-                      <option value="1x4">1×4 (세로)</option>
-                      <option value="2x2">2×2 (정사각)</option>
+                      <option value="1x4">{t('booth.layoutVertical')}</option>
+                      <option value="2x2">{t('booth.layoutSquare')}</option>
                     </select>
                   </div>
 
                   {/* 촬영 대기시간 선택 */}
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
-                      대기시간
+                      {t('booth.waitTime')}
                     </label>
                     <select
                       value={countdownDuration}
                       onChange={(e) => setCountdownDuration(Number(e.target.value))}
                       className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base text-gray-700 font-medium"
                     >
-                      <option value={3}>3초</option>
-                      <option value={5}>5초</option>
-                      <option value={7}>7초</option>
+                      <option value={3}>3{t('booth.seconds')}</option>
+                      <option value={5}>5{t('booth.seconds')}</option>
+                      <option value={7}>7{t('booth.seconds')}</option>
                     </select>
                   </div>
 
                   {/* 프레임 선택 버튼 */}
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">
-                      프레임
+                      {t('booth.frame')}
                     </label>
                     <button
                       onClick={() => setShowFrameModal(true)}
                       className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border-2 border-gray-300 hover:border-blue-500 focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base text-gray-700 font-medium bg-white hover:bg-gray-50 flex items-center justify-between"
                     >
-                      <span className="truncate">{selectedFrame ? selectedFrame.name : '없음'}</span>
+                      <span className="truncate">{selectedFrame ? selectedFrame.name : t('booth.frameNone')}</span>
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -655,26 +652,39 @@ export default function BoothPage() {
               <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 sm:gap-4 items-center">
                 {/* 자동 촬영 버튼 */}
                 {!isAutoMode && fourCutPhotos.length === 0 && (
-                  <button
-                    onClick={() => {
-                      console.log('🎬 자동 촬영 시작 버튼 클릭');
-                      console.log('📊 현재 상태:', {
-                        isRecording,
-                        recordedVideosCount: recordedVideosRef.current.length,
-                        fourCutPhotosCount: fourCutPhotos.length
-                      });
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => {
+                        console.log('🎬 자동 촬영 시작 버튼 클릭');
+                        console.log('📊 현재 상태:', {
+                          isRecording,
+                          recordedVideosCount: recordedVideosRef.current.length,
+                          fourCutPhotosCount: fourCutPhotos.length
+                        });
 
-                      setIsAutoMode(true);
-                      setCountdown(countdownDuration);
-                      showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
+                        setIsAutoMode(true);
+                        setCountdown(countdownDuration);
+                        showNotification(`자동 촬영 시작! ${countdownDuration}초 후 첫 번째 사진이 촬영됩니다`, 'info');
 
-                      // 첫 번째 동영상 녹화는 useEffect에서 자동으로 시작됨
-                      console.log('🎥 첫 번째 비디오 녹화는 useEffect에서 자동 시작 예정');
-                    }}
-                    className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
-                  >
-                    ⏱️ 자동 촬영 + 🎥 동영상
-                  </button>
+                        // 첫 번째 동영상 녹화는 useEffect에서 자동으로 시작됨
+                        console.log('🎥 첫 번째 비디오 녹화는 useEffect에서 자동 시작 예정');
+                      }}
+                      className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+                    >
+                      {t('booth.autoCapture')}
+                    </button>
+                    <p className="text-xs text-gray-500 ml-1">
+                      {t('booth.hintPressAuto')}
+                    </p>
+                  </div>
+                )}
+
+                {!isAutoMode && fourCutPhotos.length > 0 && fourCutPhotos.length < 4 && (
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs text-gray-500 ml-1">
+                      {t('booth.hintPressCapture', { number: fourCutPhotos.length + 1 })}
+                    </p>
+                  </div>
                 )}
 
                 {/* 자동 촬영 취소 버튼 */}
@@ -683,41 +693,39 @@ export default function BoothPage() {
                     onClick={cancelAutoMode}
                     className="px-4 py-2 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg bg-red-500 hover:bg-red-600 text-white transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    ✕ 취소
+                    {t('booth.cancelAuto')}
                   </button>
                 )}
 
                 {/* 촬영 진행 상태 및 옵션 */}
-                {(
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold text-sm sm:text-base text-white shadow-md" style={{ backgroundColor: '#ee5253' }}>
-                      {fourCutPhotos.length}/4 완료
-                    </div>
-                    {/* 배경 색상 선택 */}
-                    <div className="flex gap-1.5 sm:gap-2 bg-white px-2 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-md">
-                      {[
-                        { color: '#000000', label: '블랙' },
-                        { color: '#ee5253', label: '레드' },
-                        { color: '#f7d945', label: '옐로우' },
-                        { color: '#FFFFFF', label: '화이트' }
-                      ].map(({ color, label }) => (
-                        <button
-                          key={color}
-                          onClick={() => setBackgroundColor(color)}
-                          className={`
-                            w-8 h-8 sm:w-10 sm:h-10 rounded-full border-3 transition-all hover:scale-110
-                            ${backgroundColor === color ? 'ring-2 sm:ring-4 ring-offset-1 sm:ring-offset-2' : 'border-2 border-gray-300'}
-                          `}
-                          style={{
-                            backgroundColor: color,
-                            ringColor: '#ee5253'
-                          }}
-                          title={label}
-                        />
-                      ))}
-                    </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold text-sm sm:text-base text-white shadow-md" style={{ backgroundColor: '#ee5253' }}>
+                    {t('booth.progressComplete', { current: fourCutPhotos.length })}
                   </div>
-                )}
+                  {/* 배경 색상 선택 */}
+                  <div className="flex gap-1.5 sm:gap-2 bg-white px-2 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-md">
+                    {[
+                      { color: '#000000', label: '블랙' },
+                      { color: '#ee5253', label: '레드' },
+                      { color: '#f7d945', label: '옐로우' },
+                      { color: '#FFFFFF', label: '화이트' }
+                    ].map(({ color, label}) => (
+                      <button
+                        key={color}
+                        onClick={() => setBackgroundColor(color)}
+                        className={`
+                          w-8 h-8 sm:w-10 sm:h-10 rounded-full border-3 transition-all hover:scale-110
+                          ${backgroundColor === color ? 'ring-2 sm:ring-4 ring-offset-1 sm:ring-offset-2' : 'border-2 border-gray-300'}
+                        `}
+                        style={{
+                          backgroundColor: color,
+                          ringColor: '#ee5253'
+                        }}
+                        title={label}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* 알림 영역 (카메라 프레임 위) */}
@@ -767,14 +775,7 @@ export default function BoothPage() {
                   </div>
                 )}
 
-                {/* 수동 모드 - 촬영 안내 */}
-                {!isAutoMode && !isReviewingPhoto && fourCutPhotos.length < 4 && (
-                  <div className="absolute top-4 left-4 right-4 bg-blue-500 bg-opacity-90 rounded-lg p-3 z-10">
-                    <div className="text-center text-white font-semibold">
-                      촬영 버튼을 눌러 {fourCutPhotos.length + 1}번째 사진을 촬영하세요
-                    </div>
-                  </div>
-                )}
+                {/* 수동 모드 - 촬영 안내 제거 (자동 촬영 버튼 아래로 이동) */}
 
                 {/* 사진 확인 중 - 안내 메시지 */}
                 {isReviewingPhoto && lastCapturedPhoto && (
@@ -956,7 +957,7 @@ export default function BoothPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm font-semibold text-blue-800">진행 상황</span>
+                    <span className="text-sm font-semibold text-blue-800">{t('booth.progressTitle')}</span>
                     <span className="text-lg font-bold text-blue-600">{fourCutPhotos.length}/4</span>
                   </div>
 
@@ -1064,7 +1065,7 @@ export default function BoothPage() {
           <div className="mt-12 max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <h2 className="text-2xl font-bold text-center mb-8 text-gray-800">
-                📖 사용 방법
+                {t('booth.guideTitle')}
               </h2>
 
               <div className="grid md:grid-cols-3 gap-6">
@@ -1072,9 +1073,9 @@ export default function BoothPage() {
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl">📷</span>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">1. 카메라 켜기</h3>
+                  <h3 className="font-semibold text-lg mb-2">{t('booth.guideStep1Title')}</h3>
                   <p className="text-gray-600 text-sm">
-                    초록색 버튼을 눌러 카메라를 켜고 촬영 준비를 하세요
+                    {t('booth.guideStep1Desc')}
                   </p>
                 </div>
 
@@ -1082,9 +1083,9 @@ export default function BoothPage() {
                   <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl">🖼️</span>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">2. 프레임 선택</h3>
+                  <h3 className="font-semibold text-lg mb-2">{t('booth.guideStep2Title')}</h3>
                   <p className="text-gray-600 text-sm">
-                    오른쪽에서 마음에 드는 프레임을 선택하세요
+                    {t('booth.guideStep2Desc')}
                   </p>
                 </div>
 
@@ -1092,9 +1093,9 @@ export default function BoothPage() {
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl">📸</span>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">3. 촬영 & 다운로드</h3>
+                  <h3 className="font-semibold text-lg mb-2">{t('booth.guideStep3Title')}</h3>
                   <p className="text-gray-600 text-sm">
-                    중앙 버튼으로 촬영하고 결과를 다운로드하세요
+                    {t('booth.guideStep3Desc')}
                   </p>
                 </div>
               </div>
