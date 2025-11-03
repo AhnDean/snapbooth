@@ -3,8 +3,10 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { findPhotoByCode } from '../../src/utils/photoUpload';
+import { useTranslation } from '../../src/hooks/useTranslation';
 
 function LivePhotoContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const [showVideos, setShowVideos] = useState(false);
   const [countdown, setCountdown] = useState(5);
@@ -27,7 +29,7 @@ function LivePhotoContent() {
         setLayoutType(layout);
 
         if (!code) {
-          setError('사진 코드가 없습니다.');
+          setError(t('livePhoto.notFound'));
           setLoading(false);
           return;
         }
@@ -63,13 +65,13 @@ function LivePhotoContent() {
           console.log('✅ 모든 비디오 Blob 변환 완료');
         } else {
           console.warn('⚠️ 동영상이 없습니다. video_urls:', result.photo?.video_urls);
-          setError('라이브 포토가 없습니다.');
+          setError(t('livePhoto.notFound'));
         }
 
         setLoading(false);
       } catch (err) {
         console.error('❌ 동영상 로드 실패:', err);
-        setError('동영상을 불러올 수 없습니다.');
+        setError(t('error.networkError'));
         setLoading(false);
       }
     };
@@ -120,14 +122,14 @@ function LivePhotoContent() {
     });
 
     if (videoUrls.length === 0) {
-      alert('동영상이 로드되지 않았습니다.');
+      alert(t('livePhoto.notFound'));
       return;
     }
 
     // MediaRecorder 지원 확인
     if (typeof MediaRecorder === 'undefined') {
       console.error('❌ MediaRecorder API 미지원');
-      alert('죄송합니다. 이 브라우저는 비디오 녹화를 지원하지 않습니다.\n\n최신 Safari 또는 Chrome을 사용해주세요.');
+      alert(t('livePhoto.errorBrowser'));
       return;
     }
 
@@ -141,7 +143,7 @@ function LivePhotoContent() {
       console.log('✅ 준비된 비디오:', readyVideos.length, '개');
 
       if (readyVideos.length === 0) {
-        alert('비디오가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+        alert(t('livePhoto.loading'));
         return;
       }
 
@@ -336,11 +338,11 @@ function LivePhotoContent() {
 
       // 기기별 안내 메시지
       if (isIOS) {
-        alert('✅ 라이브 포토가 저장되었습니다!\n\n📱 Safari 다운로드 버튼을 눌러\n파일 앱에서 확인하세요.\n\n💡 갤러리에 저장하려면:\n1. 파일 앱 > 다운로드 폴더\n2. 영상을 길게 눌러 공유\n3. "비디오 저장" 선택');
+        alert(t('livePhoto.savedIOS'));
       } else if (isAndroid) {
-        alert('✅ 라이브 포토가 저장되었습니다!\n\n📱 다운로드 폴더에서 확인하세요.\n\n💡 일부 브라우저는 파일 앱이나\n갤러리 앱에서 확인 가능합니다.');
+        alert(t('livePhoto.savedAndroid'));
       } else {
-        alert('✅ 다운로드 완료!\n\n💻 다운로드 폴더를 확인하세요.');
+        alert(t('livePhoto.savedPC'));
       }
 
     } catch (error) {
@@ -353,14 +355,14 @@ function LivePhotoContent() {
       setIsRecording(false);
 
       // 사용자 친화적인 에러 메시지
-      let errorMessage = '라이브 포토 저장에 실패했습니다.\n\n';
+      let errorMessage = t('error.uploadFailed') + '\n\n';
 
       if (error.message.includes('codec') || error.message.includes('mimeType')) {
-        errorMessage += '이 기기는 비디오 녹화를 지원하지 않습니다.\n\n대신 스크린샷을 촬영해주세요.';
+        errorMessage = t('livePhoto.errorUnsupported');
       } else if (error.message.includes('captureStream')) {
-        errorMessage += '이 브라우저는 비디오 녹화를 지원하지 않습니다.\n\n최신 Chrome 또는 Safari를 사용해주세요.';
+        errorMessage = t('livePhoto.errorBrowser');
       } else {
-        errorMessage += `에러: ${error.message}\n\n콘솔 로그를 확인해주세요.`;
+        errorMessage += `${t('find.error')}: ${error.message}`;
       }
 
       alert(errorMessage);
@@ -374,7 +376,7 @@ function LivePhotoContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <p className="text-white">라이브 포토를 불러오는 중...</p>
+        <p className="text-white">{t('livePhoto.loading')}</p>
       </div>
     );
   }
@@ -384,12 +386,12 @@ function LivePhotoContent() {
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
         <div className="text-center">
           <div className="text-6xl mb-4">😢</div>
-          <p className="text-white text-xl mb-4">{error || '라이브 포토가 없습니다'}</p>
+          <p className="text-white text-xl mb-4">{error || t('livePhoto.notFound')}</p>
           <button
             onClick={() => window.close()}
             className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold"
           >
-            닫기
+            {t('common.close')}
           </button>
         </div>
       </div>
@@ -406,7 +408,7 @@ function LivePhotoContent() {
               {countdown}
             </div>
             <div className="text-xl text-white">
-              🎬 라이브 포토가 곧 재생됩니다
+              {t('livePhoto.countdown')}
             </div>
           </div>
         </div>
@@ -418,10 +420,10 @@ function LivePhotoContent() {
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
             <div className="text-2xl font-bold text-white mb-2">
-              🎥 비디오 생성 중...
+              {t('livePhoto.saving')}
             </div>
             <div className="text-sm text-gray-400">
-              잠시만 기다려주세요
+              {t('livePhoto.savingDesc')}
             </div>
           </div>
         </div>
@@ -462,7 +464,7 @@ function LivePhotoContent() {
             }}
           >
             <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-10">
-              {index + 1}번째 순간
+              {t('livePhoto.moment', { number: index + 1 })}
             </div>
             <video
               ref={el => videoRefs.current[index] = el}
@@ -491,10 +493,10 @@ function LivePhotoContent() {
 
       <div className="text-center mt-2 mb-4">
         <p className="text-white text-sm">
-          🎥 촬영 전 준비하는 모습을 담은 라이브 포토
+          {t('livePhoto.description')}
         </p>
         <p className="text-gray-400 text-xs mt-1">
-          💡 비디오를 탭하면 재생/일시정지됩니다
+          {t('livePhoto.tapToPlay')}
         </p>
       </div>
 
@@ -508,7 +510,7 @@ function LivePhotoContent() {
               isRecording ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            📥 라이브 포토 저장하기
+            {t('livePhoto.save')}
           </button>
           <button
             onClick={() => window.close()}
@@ -517,7 +519,7 @@ function LivePhotoContent() {
               isRecording ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            닫기
+            {t('common.close')}
           </button>
         </div>
       )}
@@ -532,7 +534,7 @@ export default function LivePhotoPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <p className="text-white">라이브 포토를 불러오는 중...</p>
+        <p className="text-white">Loading...</p>
       </div>
     }>
       <LivePhotoContent />

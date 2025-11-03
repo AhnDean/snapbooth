@@ -44,23 +44,56 @@ export const vi = {
     seconds: 'giây',
     frame: 'Khung hình',
     frameNone: 'Không có',
-    selectFrame: 'Chọn khung hình',
+    selectFrame: '🖼️ Chọn khung hình',
+    frameRemoved: 'Đã bỏ khung hình',
+    frameSelected: 'Đã chọn khung hình {name}',
 
     // Chế độ chụp
     autoCapture: '⏱️ Tự động chụp + 🎥 Video',
     cancelAuto: '❌ Hủy chụp tự động',
-    retake: '🔄 Chụp lại',
+    retake: 'Chụp lại',
 
     // Thông báo trạng thái
     autoStarting: 'Bắt đầu chụp tự động! Ảnh đầu tiên sẽ được chụp sau {seconds} giây',
     photoComplete: '{current}/4 hoàn thành! Chụp tiếp sau {seconds} giây',
     allComplete: 'Hoàn thành 4 ảnh! Đang ghép ảnh...',
-    reviewing: 'Đang xem ảnh thứ {number} - Chụp lại hoặc nhấn nút chụp để tiếp tục',
+    reviewing: 'Đã chụp ảnh. Nhấn nút để chụp lại nếu cần.',
+    manualNext: '{current}/4 hoàn thành! Nhấn nút chụp để chụp ảnh tiếp theo',
+    retaking: 'Chụp lại. Sẽ chụp sau {seconds} giây',
+    retakeManual: 'Nhấn nút chụp để chụp lại',
+    autoCancelled: 'Đã hủy chụp tự động',
+    fourCutComplete: 'Hoàn thành 4 ảnh! Đang ghép ảnh...',
+    alreadyComplete: 'Đã hoàn thành 4 ảnh!',
+
+    // Web Share
+    shareTitle: 'CHUPBOX Phòng chụp',
+    shareText: 'Lưu giữ khoảnh khắc đáng nhớ! 📸',
+    shareComplete: 'Đã chia sẻ!',
+    downloadGuide: '💡 Giữ ảnh trong thư mục tải xuống và chọn "Lưu ảnh" để lưu vào thư viện',
+
+    // Tải lên
+    uploadSaving: 'Đang lưu vào cloud...',
+    uploadSuccess: '✅ Lưu thành công! Dùng mã QR để tìm ảnh',
+    uploadFailed: '⚠️ Lưu thất bại: {error}',
+    uploadUnknownError: 'Lỗi không xác định',
+    videoUploading: 'Đang tải video lên... ({count} video)',
+    videoUploadComplete: 'Đã lưu ảnh và Live Photo!',
+    videoUploadFailed: 'Tải Live Photo thất bại (ảnh đã được lưu)',
+    videoSaveFailed: 'Lưu Live Photo thất bại',
+
+    // In ảnh
+    print: 'In ảnh',
+    printDialogCheck: 'Vui lòng kiểm tra hộp thoại in',
+    printFailed: 'In thất bại',
+    printPopupBlocked: 'Popup bị chặn. Vui lòng cho phép popup.',
+
+    // Lưu
+    save: 'Lưu vào thư viện',
 
     // Đếm ngược
     countdown: 'Chụp sau {seconds} giây',
-    getReady: 'Chuẩn bị!',
-    smile: 'Click!',
+    getReady: 'Đang chuẩn bị...',
+    recording: '🎥 Đang quay video',
 
     // Nút bấm
     capture: 'Chụp',
@@ -74,6 +107,7 @@ export const vi = {
     cameraStatus: 'Camera đang bật (Trước)',
     progressTitle: 'Tiến trình',
     photoTitle: 'Chụp ảnh',
+    completed: 'Hoàn thành',
 
     // Hướng dẫn sử dụng
     guideTitle: '📖 Hướng dẫn sử dụng',
@@ -90,6 +124,16 @@ export const vi = {
     cameraRear: 'Sau',
     cameraSwitchDisabled: 'Không thể chuyển camera khi đang chụp tự động',
     switchCamera: 'Chuyển camera',
+
+    // Mã QR
+    qrPhoto: '📸 Xem ảnh',
+    qrPhotoDesc: 'Tải ảnh xuống',
+    qrLivePhoto: '🎥 Live Photo',
+    qrLivePhotoDesc: 'Phát video',
+    livePhotoMoments: '🎬 Live Photo ({count} khoảnh khắc)',
+    livePhotoView: '🎥 Xem Live Photo',
+    livePhotoDesc: 'Live Photo ghi lại khoảnh khắc chuẩn bị trước khi chụp',
+    noPhotoCode: 'Không có mã ảnh. Vui lòng lưu ảnh trước.',
 
     // Kết quả
     result: {
@@ -134,15 +178,32 @@ export const vi = {
 
   // Tìm ảnh
   find: {
-    title: 'Tìm ảnh của tôi',
+    title: '🔍 Tìm ảnh của bạn',
+    subtitle: 'Nhập mã 6 ký tự để tìm ảnh đã chụp',
     inputCode: 'Nhập mã ảnh',
-    codePlaceholder: 'Nhập mã 6 ký tự',
-    search: '🔍 Tìm ảnh',
-    searching: 'Đang tìm ảnh...',
-    found: 'Đã tìm thấy ảnh!',
+    codePlaceholder: 'VD: A3K9B2',
+    search: '🔍 Tìm kiếm',
+    searching: '⏳ Đang tìm...',
+    found: 'Tìm thấy ảnh!',
     notFound: 'Không tìm thấy ảnh',
     notFoundDesc: 'Vui lòng kiểm tra lại mã',
-    invalidCode: 'Định dạng mã không đúng',
+    invalidCode: 'Vui lòng nhập mã 6 ký tự',
+    error: 'Lỗi',
+    capturedDate: 'Chụp ngày: {date}',
+    photoCode: 'Mã ảnh',
+    size: 'Kích thước',
+    fileSize: 'Dung lượng',
+    downloadCount: 'Lượt tải',
+    livePhotoView: '🎥 Xem Live Photo',
+    downloadPhoto: '📥 Tải xuống ảnh',
+    expiresOn: '💡 Ảnh sẽ được lưu trữ đến ngày: {date} (30 ngày)',
+    howToFindTitle: '❓ Làm sao để tìm mã ảnh?',
+    howToFindStep1: 'Sau khi chụp ảnh tại photobooth, bạn sẽ nhận được mã 6 ký tự',
+    howToFindStep2: 'Ghi lại mã hoặc chụp màn hình',
+    howToFindStep3: 'Quay lại trang này và nhập mã để tải ảnh',
+    booth: '📸 Chụp ảnh',
+    home: 'Trang chủ',
+    findYourPhoto: 'Tìm ảnh của bạn',
   },
 
   // Thông báo lỗi
