@@ -9,16 +9,22 @@ export function LanguageProvider({ children }) {
 
   // 로컬 스토리지에서 언어 설정 불러오기
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage && (savedLanguage === 'ko' || savedLanguage === 'vi')) {
-      setLanguage(savedLanguage);
+    // 브라우저 환경에서만 localStorage 접근
+    if (typeof window !== 'undefined') {
+      const savedLanguage = localStorage.getItem('language');
+      if (savedLanguage && (savedLanguage === 'ko' || savedLanguage === 'vi')) {
+        setLanguage(savedLanguage);
+      }
     }
   }, []);
 
   // 언어 변경 시 로컬 스토리지에 저장
   const changeLanguage = (lang) => {
     setLanguage(lang);
-    localStorage.setItem('language', lang);
+    // 브라우저 환경에서만 localStorage 접근
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('language', lang);
+    }
   };
 
   return (
